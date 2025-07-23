@@ -1,0 +1,3 @@
+`console.trace($arg)` where {
+	register_diagnostic(span=$arg, message="Use logger.verbose() instead of console.trace()")
+}

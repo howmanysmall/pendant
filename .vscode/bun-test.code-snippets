@@ -1,0 +1,9 @@
+{
+	"Bun Unit Test": {
+		"body": ["import { describe, expect, it } from \"bun:test\";", ""],
+		"description": "Creates a Bun unit test.",
+		"isFileTemplate": true,
+		"prefix": ["unittest", "bununit"],
+		"scope": "typescript,typescriptreact",
+	},
+}

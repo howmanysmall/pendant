@@ -1,0 +1,1 @@
+`console.info($arg)` where { register_diagnostic(span=$arg, message="Use logger.info() instead of console.info()") }

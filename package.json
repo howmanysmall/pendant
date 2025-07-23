@@ -1,0 +1,71 @@
+{
+	"bunli": {
+		"entry": "./src/index.ts",
+		"outDir": "./dist"
+	},
+	"bin": {
+		"pendant": "./dist/index.js"
+	},
+	"description": "Luau kind of sucks at linting itself. This fixes it.",
+	"name": "pendant",
+	"module": "src/index.ts",
+	"type": "module",
+	"devDependencies": {
+		"@biomejs/biome": "^2.1.2",
+		"@bunli/test": "latest",
+		"@eslint-react/eslint-plugin": "^1.48.4",
+		"@eslint/config-inspector": "^1.1.0",
+		"@isentinel/eslint-config": "^1.2.3",
+		"@mitata/counters": "^0.0.8",
+		"@types/bun": "latest",
+		"bunli": "latest",
+		"concurrently": "^9.1.2",
+		"eslint": "^9.25.1",
+		"eslint-config-biome": "^1.9.4",
+		"eslint-plugin-react-roblox-hooks": "^5.1.0-rbx.1",
+		"jiti": "^2.4.2",
+		"mitata": "^1.0.34"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@bunli/core": "latest",
+		"@octokit/rest": "^22.0.0",
+		"chalk": "^5.4.1",
+		"chokidar": "^4.0.3",
+		"env-paths": "^3.0.0",
+		"pretty-ms": "^9.2.0",
+		"rimraf": "^6.0.1",
+		"winston": "^3.17.0",
+		"winston-daily-rotate-file": "^5.0.0",
+		"zod": "^4.0.5",
+		"zod-args": "^0.1.0",
+		"zod-validation-error": "^4.0.0-beta.2"
+	},
+	"scripts": {
+		"build": "bunli build",
+		"dev": "bun run src/index.ts",
+		"lint:biome": "bun x --bun biome ci",
+		"lint:eslint": "bun x eslint --max-warnings 0 ./src",
+		"lint:fix": "bun run lint --fix",
+		"lint:tsc": "bun x tsc --noEmit",
+		"lint": "./scripts/lint.ts",
+		"test": "bun test",
+		"type-check": "bun x tsc --noEmit"
+	},
+	"version": "0.1.0",
+	"author": {
+		"name": "HowManySmall"
+	},
+	"homepage": "https://github.com/howmanysmall/pendant#readme",
+	"bugs": {
+		"url": "https://github.com/howmanysmall/pendant/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/howmanysmall/pendant.git"
+	},
+	"license": "MIT",
+	"main": "src/index.ts"
+}

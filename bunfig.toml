@@ -1,0 +1,11 @@
+[install]
+auto = "auto"
+
+[test]
+coverage = true
+coverageSkipTestFiles = true
+coverageThreshold = 0.75
+root = "./test"
+
+[run]
+bun = true

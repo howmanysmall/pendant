@@ -1,0 +1,75 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"additionalProperties": false,
+	"description": "A configuration for the pendant tool. This is how you can configure the tool to your liking.",
+	"patternProperties": {
+		"^\\$schema$": {
+			"description": "JSON Schema meta-schema URI (editor hint)",
+			"format": "any",
+			"type": "string"
+		}
+	},
+	"properties": {
+		"files": {
+			"additionalProperties": false,
+			"description": "How you configure the contexts for files. These are globs.",
+			"properties": {
+				"additionalProperties": false,
+				"client": {
+					"description": "The files to include for the client context.",
+					"items": { "type": "string" },
+					"readOnly": true,
+					"type": "array"
+				},
+				"server": {
+					"description": "The files to include for the server context.",
+					"items": { "type": "string" },
+					"readOnly": true,
+					"type": "array"
+				},
+				"shared": {
+					"description": "The files to include for the shared context.",
+					"items": { "type": "string" },
+					"readOnly": true,
+					"type": "array"
+				},
+				"testing": {
+					"description": "The files to include for the testing context.",
+					"items": { "type": "string" },
+					"readOnly": true,
+					"type": "array"
+				}
+			},
+			"readOnly": true,
+			"required": ["client", "server", "shared"],
+			"type": "object"
+		},
+
+		"knownProblematicFiles": {
+			"description": "Files that are known to be problems.",
+			"items": { "type": "string" },
+			"readOnly": true,
+			"type": "array"
+		},
+
+		"outputFileName": {
+			"default": "problematic",
+			"description": "The name of the file to output the analysis results to. Defaults to `problematic`.",
+			"type": "string"
+		},
+
+		"projectFile": {
+			"default": "default.project.json",
+			"description": "The project file to use for the pendant tool. Defaults to `default.project.json`.",
+			"pattern": "^.*\\.project\\.json$",
+			"type": "string"
+		},
+
+		"readOnly": true
+	},
+
+	"readOnly": true,
+	"required": ["files"],
+	"title": "PendantConfiguration",
+	"type": "object"
+}

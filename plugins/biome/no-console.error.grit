@@ -1,0 +1,1 @@
+`console.error($arg)` where { register_diagnostic(span=$arg, message="Use logger.error() instead of console.error()") }

@@ -1,0 +1,1 @@
+`console.warn($arg)` where { register_diagnostic(span=$arg, message="Use logger.warn() instead of console.warn()") }

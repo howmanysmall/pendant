@@ -1,0 +1,27 @@
+import { expectCommand, testCommand } from "@bunli/test";
+
+import { test } from "bun:test";
+import helloCommand from "commands/hello";
+
+test("hello command - default name", async () => {
+	const result = await testCommand(helloCommand);
+
+	expectCommand(result).toHaveSucceeded();
+	expectCommand(result).toContainInStdout("Hello, World.");
+});
+
+test("hello command - custom name", async () => {
+	const result = await testCommand(helloCommand, {
+		flags: { name: "Alice" },
+	});
+
+	expectCommand(result).toContainInStdout("Hello, Alice.");
+});
+
+test("hello command - excited flag", async () => {
+	const result = await testCommand(helloCommand, {
+		flags: { name: "Bob", excited: true },
+	});
+
+	expectCommand(result).toContainInStdout("Hello, Bob!");
+});
