@@ -147,13 +147,148 @@ export function prettyJsonStringify(
 	return "null";
 }
 
-const JSON_BLOCK_COMMENT_REGEX = /\/\*[\s\S]*?\*\//g;
-const JSON_LINE_COMMENT_REGEX = /\/\/[^\r\n]*/g;
-const JSON_TRAILING_COMMA_REGEX = /,\s*([}\]])/g;
+// Regex for whitespace checking (defined at module level for performance)
+const WHITESPACE_REGEX = /\s/;
+function countPrecedingBackslashes(string: string, startIndex: number): number {
+	let count = 0;
+	let checkIndex = startIndex;
 
+	while (checkIndex >= 0 && string[checkIndex] === "\\") {
+		count += 1;
+		checkIndex -= 1;
+	}
+
+	return count;
+}
+function processQuotedString(jsonString: string, startIndex: number, result: Array<string>): number {
+	const { length } = jsonString;
+	let index = startIndex;
+
+	const openingQuote = jsonString[index];
+	if (openingQuote !== undefined) result.push(openingQuote);
+	index += 1;
+
+	while (index < length) {
+		const stringCharacter = jsonString[index];
+		if (stringCharacter === undefined) break;
+
+		result.push(stringCharacter);
+
+		if (stringCharacter === '"') {
+			const backslashCount = countPrecedingBackslashes(jsonString, index - 1);
+			if (backslashCount % 2 === 0) {
+				index += 1;
+				break;
+			}
+		}
+		index += 1;
+	}
+
+	return index;
+}
+
+function processTrailingComma(jsonString: string, startIndex: number, length: number, result: Array<string>): number {
+	let nextIndex = startIndex + 1;
+	while (nextIndex < length) {
+		const nextCharacter = jsonString[nextIndex];
+		if (nextCharacter === undefined || !WHITESPACE_REGEX.test(nextCharacter)) break;
+		nextIndex += 1;
+	}
+
+	const nextCharacter = jsonString[nextIndex];
+	if (nextCharacter === "}" || nextCharacter === "]") {
+		let index = startIndex + 1;
+		while (index < nextIndex) {
+			const whitespaceCharacter = jsonString[index];
+			if (whitespaceCharacter !== undefined) result.push(whitespaceCharacter);
+			index += 1;
+		}
+		return nextIndex;
+	}
+
+	return startIndex;
+}
+function removeTrailingCommas(jsonString: string): string {
+	const result = new Array<string>();
+	let index = 0;
+	const { length } = jsonString;
+
+	while (index < length) {
+		const character = jsonString[index];
+		if (character === undefined) break;
+
+		if (character === '"') {
+			const stringEndIndex = processQuotedString(jsonString, index, result);
+			index = stringEndIndex;
+			continue;
+		}
+
+		if (character === ",") {
+			const nextIndex = processTrailingComma(jsonString, index, length, result);
+			if (nextIndex !== index) {
+				index = nextIndex;
+				continue;
+			}
+		}
+
+		result.push(character);
+		index += 1;
+	}
+
+	return result.join("");
+}
+
+function removeCommentsOnly(jsonString: string): string {
+	const result = new Array<string>();
+	let index = 0;
+	const { length } = jsonString;
+
+	while (index < length) {
+		const character = jsonString[index];
+		if (character === undefined) break;
+
+		if (character === '"') {
+			const stringEndIndex = processQuotedString(jsonString, index, result);
+			index = stringEndIndex;
+			continue;
+		}
+
+		if (character === "/" && index + 1 < length && jsonString[index + 1] === "*") {
+			index += 2;
+			while (index + 1 < length) {
+				if (jsonString[index] === "*" && jsonString[index + 1] === "/") {
+					index += 2;
+					break;
+				}
+				index += 1;
+			}
+			continue;
+		}
+
+		if (character === "/" && index + 1 < length && jsonString[index + 1] === "/") {
+			index += 2;
+			while (index < length && jsonString[index] !== "\n" && jsonString[index] !== "\r") index += 1;
+			continue;
+		}
+
+		result.push(character);
+		index += 1;
+	}
+
+	return result.join("");
+}
+
+/**
+ * Safely removes JSON comments and trailing commas while preserving string
+ * content.
+ *
+ * This function properly parses JSON structure to avoid corrupting string
+ * values that may contain comment-like or comma-like patterns.
+ *
+ * @param jsonString - The JSON string to clean up.
+ * @returns The cleaned JSON string.
+ * @throws {Error} If the input contains malformed JSON structure.
+ */
 export function makeJsonSafe(jsonString: string): string {
-	return jsonString
-		.replace(JSON_BLOCK_COMMENT_REGEX, "")
-		.replace(JSON_LINE_COMMENT_REGEX, "")
-		.replace(JSON_TRAILING_COMMA_REGEX, "$1");
+	return removeTrailingCommas(removeCommentsOnly(jsonString));
 }

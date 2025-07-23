@@ -247,5 +247,78 @@ describe("Json Utilities", () => {
 			expect(() => JSON.parse(jsonString)).toThrow();
 			expect(() => JSON.parse(makeJsonSafe(jsonString))).not.toThrow();
 		});
+
+		it("should preserve URLs with // in string values", () => {
+			const jsonString = `{
+	"website": "https://example.com",
+	"api": "http://api.example.com/data",
+	"secure": "https://secure.example.com/path/to/resource"
+}`;
+
+			const result = makeJsonSafe(jsonString);
+			const parsed = JSON.parse(result);
+
+			expect(parsed.website).toBe("https://example.com");
+			expect(parsed.api).toBe("http://api.example.com/data");
+			expect(parsed.secure).toBe("https://secure.example.com/path/to/resource");
+		});
+
+		it("should preserve URLs while removing comments", () => {
+			const jsonString = `{
+	// Website configuration
+	"website": "https://example.com",
+	/* API endpoints */
+	"api": "http://api.example.com/data", // Main API
+	"backup": "https://backup.example.com/api",
+}`;
+
+			expect(() => JSON.parse(jsonString)).toThrow();
+
+			const result = makeJsonSafe(jsonString);
+
+			expect(() => JSON.parse(result)).not.toThrow();
+
+			const parsed = JSON.parse(result);
+
+			expect(parsed.website).toBe("https://example.com");
+			expect(parsed.api).toBe("http://api.example.com/data");
+			expect(parsed.backup).toBe("https://backup.example.com/api");
+		});
+
+		it("should handle complex URLs with query parameters and fragments", () => {
+			const jsonString = `{
+	"complex_url": "https://example.com/path?param=value&other=test#fragment",
+	"ftp_url": "ftp://files.example.com/path/to/file.txt",
+	"protocol_relative": "//cdn.example.com/assets/script.js"
+}`;
+
+			const result = makeJsonSafe(jsonString);
+			const parsed = JSON.parse(result);
+
+			expect(parsed.complex_url).toBe("https://example.com/path?param=value&other=test#fragment");
+			expect(parsed.ftp_url).toBe("ftp://files.example.com/path/to/file.txt");
+			expect(parsed.protocol_relative).toBe("//cdn.example.com/assets/script.js");
+		});
+
+		it("should distinguish between URLs and actual line comments", () => {
+			const jsonString = `{
+	"url": "https://example.com/path",
+	// This is an actual comment that should be removed
+	"another_url": "http://test.com//double/slash/path",
+		// Another comment
+	"data": "value"
+}`;
+
+			const result = makeJsonSafe(jsonString);
+			const parsed = JSON.parse(result);
+
+			expect(parsed.url).toBe("https://example.com/path");
+			expect(parsed.another_url).toBe("http://test.com//double/slash/path");
+			expect(parsed.data).toBe("value");
+
+			// Verify comments were removed (result shouldn't contain comment text)
+			expect(result).not.toContain("This is an actual comment");
+			expect(result).not.toContain("Another comment");
+		});
 	});
 });

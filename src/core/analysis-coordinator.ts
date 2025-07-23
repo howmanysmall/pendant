@@ -46,7 +46,7 @@ export interface AnalysisCoordinatorOptions {
 	 * The source directory to watch for changes. Defaults to `join(cwd,
 	 * "src")`.
 	 */
-	readonly sourceDir?: string;
+	readonly sourceDirectory?: string;
 }
 
 const consoleInfo = console.info;
@@ -155,9 +155,9 @@ export default class AnalysisCoordinator {
 	 *   watch mode.
 	 */
 	public async startWatchModeAsync(options: AnalysisOptions): Promise<void> {
-		logger.info(`Starting watch mode for ${this.sourceDir}...`);
+		logger.info(`Starting watch mode for ${this.sourceDirectory}...`);
 
-		const watcher = watch([this.sourceDir], {
+		const watcher = watch([this.sourceDirectory], {
 			ignored: IGNORE_DOT_FILES_REGEX,
 			ignoreInitial: true,
 			persistent: true,
@@ -184,7 +184,7 @@ export default class AnalysisCoordinator {
 			.on("unlink", runAnalysis)
 			.on("unlinkDir", runAnalysis)
 			.on("error", (error) => logger.error(`Watcher error: ${error}`))
-			.on("ready", () => logger.info(`✓ Watching for changes in ${this.sourceDir}`));
+			.on("ready", () => logger.info(`✓ Watching for changes in ${this.sourceDirectory}`));
 
 		/** Handle graceful shutdown. */
 		const cleanup = (): void => {
@@ -204,9 +204,9 @@ export default class AnalysisCoordinator {
 		});
 	}
 
-	public constructor(options: AnalysisCoordinatorOptions = {}) {
-		this.cwd = options.cwd ?? process.cwd();
-		this.sourceDir = options.sourceDir ?? join(this.cwd, "src");
+	public constructor({ cwd, sourceDirectory }: AnalysisCoordinatorOptions = {}) {
+		this.cwd = cwd ?? process.cwd();
+		this.sourceDirectory = sourceDirectory ?? join(this.cwd, "src");
 		this.lspRunner = new LuauLspRunner(this.cwd);
 	}
 
@@ -214,5 +214,5 @@ export default class AnalysisCoordinator {
 	private lastProblematicContent?: string;
 	private lastPromise?: Promise<void>;
 	private readonly lspRunner: LuauLspRunner;
-	private readonly sourceDir: string;
+	private readonly sourceDirectory: string;
 }

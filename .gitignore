@@ -34,3 +34,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .DS_Store
 
 *.code-workspace
+.pendant.json
+
+# GEMINI.md
+# CLAUDE.md
+# .gemini
+# .claude

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { ContentType, fromPathLike, getExtension, getFilesAsync, readFileAsync } from "utilities/file-system-utilities";
 import { z } from "zod/mini";
 
+import { makeJsonSafe } from "./json-utilities";
 import { readonlyArray, readonlyObject, strictReadonlyObject } from "./zod-utilities";
 
 const PREFIX_DOT_REGEX = /^\./;
@@ -202,12 +203,25 @@ const GENERIC_FILE_GLOBS = new Array<Bun.Glob>();
 	}
 }
 
+function xpcallParse<T>(parse: (source: string) => T, source: string): T {
+	try {
+		return parse(source);
+	} catch (error) {
+		const exception = new Error(
+			`Failed to parse configuration file: ${error instanceof Error ? error.message : String(error)}:\n${source}`,
+		);
+		Error.captureStackTrace(exception, xpcallParse);
+		throw exception;
+	}
+}
+
 async function getConfigurationAsync(filePath: string): Promise<PendantConfiguration | undefined> {
 	const fileExtension = getExtension(filePath).replace(PREFIX_DOT_REGEX, "");
 	const { parse } = ConfigurationFileTypeMeta[resolveConfigurationFileType(fileExtension)];
 
-	const content = await Bun.file(filePath).text();
-	const parsed = parse(content);
+	const content = await Bun.file(filePath).text().then(makeJsonSafe);
+	const parsed = xpcallParse(parse, content);
+	// const parsed = parse(content);
 
 	const result = await isPendantConfiguration.safeParseAsync(parsed);
 	if (!result.success) return undefined;
