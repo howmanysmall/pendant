@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { barplot, bench, run } from "mitata";
-import prettyJsonStringify from "utilities/pretty-json-stringify";
+import { prettyJsonStringify } from "utilities/json-utilities";
 
 import prettyJsonEncodeOld from "./utilities/pretty-json-stringify-old";
 

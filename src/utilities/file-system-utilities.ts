@@ -8,6 +8,7 @@ import type { z } from "zod/mini";
 import { fromError } from "zod-validation-error";
 
 import { isBunFile, isPathLike } from "./bun-utilities";
+import { makeJsonSafe } from "./json-utilities";
 
 const logger = createNamespaceLogger("file-system-utilities");
 const INSPECT_OPTIONS = { colors: true } satisfies BunInspectOptions;
@@ -27,6 +28,9 @@ function joinDirent(dirent: Dirent): string {
 }
 function isDirectory(dirent: Dirent): boolean {
 	return dirent.isDirectory();
+}
+function isFile(dirent: Dirent): boolean {
+	return dirent.isFile();
 }
 
 /**
@@ -54,7 +58,8 @@ export const enum ContentType {
 	Bytes = 1,
 	FormData = 2,
 	Json = 3,
-	Text = 4,
+	JsonSafe = 4,
+	Text = 5,
 }
 
 /**
@@ -91,6 +96,31 @@ export async function getDirectoriesAsync(path: string, ignoreGlobs?: ReadonlyAr
 
 	const files = await readdir(path, { withFileTypes: true });
 	const results = files.filter(isDirectory).map(joinDirent);
+	// terrible code, but do I care? no!
+	if (ignoreGlobs)
+		return results.filter((directory): boolean => {
+			for (const glob of ignoreGlobs) if (glob.match(directory)) return true;
+			return false;
+		});
+
+	return results;
+}
+
+/**
+ * Asynchronously retrieves all files in a directory, excluding subdirectories.
+ *
+ * @param path - The absolute or relative path to the directory.
+ * @param ignoreGlobs - Optional array of Glob patterns to filter out matching
+ *   directories.
+ * @returns An array of absolute paths to each file. Returns an empty array if
+ *   the path is not a directory.
+ */
+export async function getFilesAsync(path: string, ignoreGlobs?: ReadonlyArray<Glob>): Promise<Array<string>> {
+	const stats = await stat(path);
+	if (!stats.isDirectory()) return [];
+
+	const files = await readdir(path, { withFileTypes: true });
+	const results = files.filter(isFile).map(joinDirent);
 	// terrible code, but do I care? no!
 	if (ignoreGlobs)
 		return results.filter((directory): boolean => {
@@ -177,6 +207,11 @@ export async function readFileAsync<T = unknown>(
 	contentType: ContentType.Json,
 	validator?: z.ZodMiniType<T>,
 ): Promise<T>;
+export async function readFileAsync<T = unknown>(
+	pathLike: PathLike,
+	contentType: ContentType.JsonSafe,
+	validator?: z.ZodMiniType<T>,
+): Promise<T>;
 export async function readFileAsync(pathLike: PathLike, contentType: ContentType.Text): Promise<string>;
 export async function readFileAsync(
 	pathLike: PathLike,
@@ -202,7 +237,17 @@ export async function readFileAsync(
 		}
 
 		case ContentType.Json: {
-			const json = await file.json();
+			const json: unknown = await file.json();
+			if (validator) {
+				const result = await validator.safeParseAsync(json);
+				if (!result.success) throw fromError(result.error);
+				return result.data;
+			}
+			return json;
+		}
+
+		case ContentType.JsonSafe: {
+			const json: unknown = await file.text().then(makeJsonSafe).then(JSON.parse);
 			if (validator) {
 				const result = await validator.safeParseAsync(json);
 				if (!result.success) throw fromError(result.error);

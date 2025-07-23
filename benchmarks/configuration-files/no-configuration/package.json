@@ -1,0 +1,29 @@
+{
+	"description": "This is a fake package.",
+	"name": "fake-package",
+	"module": "src/index.ts",
+	"type": "module",
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {},
+	"scripts": {},
+	"version": "0.1.0",
+	"author": {
+		"name": "fake-user"
+	},
+	"homepage": "https://github.com/fake-user/fake-repository#readme",
+	"bugs": {
+		"url": "https://github.com/fake-user/fake-repository/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/fake-user/fake-repository.git"
+	},
+	"license": "MIT",
+	"main": "src/index.ts",
+	"private": true
+}

@@ -46,6 +46,7 @@ function getSignificantDigits(number: number): string {
  * @param options - Configuration options for formatting.
  * @returns The pretty-formatted JSON string.
  */
+// eslint-disable-next-line max-lines-per-function -- useless
 export default function prettyJsonEncodeOld(
 	object: unknown,
 	{ indent = "\t", indentLevel = 0, shouldUseSortFunction, sortKeys }: Options = {},

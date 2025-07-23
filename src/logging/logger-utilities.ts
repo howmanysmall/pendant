@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
+import { bunPerformanceNow } from "utilities/performance-utilities";
 import type { Logger } from "winston";
 
-import { bunPerformanceNow } from "../utilities/performance-utilities";
 import logger from "./logger";
 
 interface LoggerMetadata {

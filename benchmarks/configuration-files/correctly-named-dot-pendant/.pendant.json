@@ -1,0 +1,12 @@
+{
+	"$schema": "./.schemas/pendant-configuration.schema.json",
+	"files": {
+		"client": ["src/client/**", "src/UIFusion/**"],
+		"server": ["src/server/**"],
+		"shared": ["src/shared/**"],
+		"testing": ["src/testing/**"]
+	},
+	"knownProblematicFiles": ["src/legacy/**", "src/deprecated/**"],
+	"outputFileName": "problematic",
+	"projectFile": "default.project.json"
+}

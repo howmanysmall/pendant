@@ -2,7 +2,7 @@ import { defineCommand, option } from "@bunli/core";
 
 import { createNamespaceLogger } from "logging/logger-utilities";
 import { isPendantConfiguration } from "utilities/configuration-utilities";
-import prettyJsonStringify from "utilities/pretty-json-stringify";
+import { prettyJsonStringify } from "utilities/json-utilities";
 import { z } from "zod/v4-mini";
 
 const logger = createNamespaceLogger("generate-schema");

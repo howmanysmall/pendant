@@ -1,9 +1,8 @@
+import applicationPaths from "constants/application-paths";
+import { IS_DEVELOPER_MODE } from "constants/environment-constants";
 import { join } from "node:path";
 import { createLogger, format, transports } from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
-
-import applicationPaths from "../constants/application-paths";
-import { IS_DEVELOPER_MODE } from "../constants/environment-constants";
 
 const enhancedFormat = format.combine(
 	format.timestamp(),

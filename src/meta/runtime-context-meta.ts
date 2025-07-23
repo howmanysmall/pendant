@@ -1,7 +1,7 @@
 import type { ChalkInstance } from "chalk";
 import chalk from "chalk";
+import type { PendantConfiguration } from "utilities/configuration-utilities";
 
-import type { PendantConfiguration } from "../utilities/configuration-utilities";
 import RuntimeContext from "./runtime-context";
 
 export interface Metadata {

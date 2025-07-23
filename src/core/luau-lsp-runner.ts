@@ -1,4 +1,4 @@
-import { createNamespaceLogger } from "../logging/logger-utilities";
+import { createNamespaceLogger } from "logging/logger-utilities";
 
 const logger = createNamespaceLogger("luau-lsp-runner");
 
