@@ -3,11 +3,24 @@ import { defineCommand, option } from "@bunli/core";
 import AnalysisCoordinator from "core/analysis-coordinator";
 import { createNamespaceLogger } from "logging/logger-utilities";
 import type RuntimeContext from "meta/runtime-context";
-import { getPendantConfigurationAsync } from "utilities/configuration-utilities";
+import {
+	getFirstConfigurationAsync,
+	getPendantConfigurationAsync,
+	type PendantConfiguration,
+} from "utilities/configuration-utilities";
 import { collectFromConfigurationAsync, collectPathsFromRuntimeMap } from "utilities/rojo-project-utilities";
 import { z } from "zod/v4-mini";
 
 const logger = createNamespaceLogger("analyze");
+
+async function getConfigurationAsync(configurationFile?: string): Promise<PendantConfiguration> {
+	if (configurationFile) {
+		const exists = await Bun.file(configurationFile).exists();
+		if (exists) return getPendantConfigurationAsync(configurationFile);
+	}
+
+	return getFirstConfigurationAsync();
+}
 
 export const analyzeCommand = defineCommand({
 	name: "analyze",
@@ -19,7 +32,7 @@ export const analyzeCommand = defineCommand({
 		try {
 			// Load configuration
 			commandSpinner.start(colors.blue("Loading pendant configuration..."));
-			const configuration = await getPendantConfigurationAsync(configurationFile);
+			const configuration = await getConfigurationAsync(configurationFile);
 			commandSpinner.stop();
 
 			// Resolve project settings
@@ -88,7 +101,7 @@ export const analyzeCommand = defineCommand({
 			description: "Adds the problematic files.",
 			short: "a",
 		}),
-		configurationFile: option(z._default(z.string(), ".pendant.json"), {
+		configurationFile: option(z.optional(z.string()), {
 			description: "The configuration file to use for the analysis.",
 			short: "c",
 		}),

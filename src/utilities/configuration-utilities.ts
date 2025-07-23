@@ -1,10 +1,9 @@
 import type ConfigurationFileType from "meta/configuration-file-type";
 import ConfigurationFileTypeMeta, { type Metadata } from "meta/configuration-file-type-meta";
 import { join } from "node:path";
-import { ContentType, fromPathLike, getExtension, getFilesAsync, readFileAsync } from "utilities/file-system-utilities";
+import { ContentType, fromPathLike, readFileAsync } from "utilities/file-system-utilities";
 import { z } from "zod/mini";
 
-import { makeJsonSafe } from "./json-utilities";
 import { readonlyArray, readonlyObject, strictReadonlyObject } from "./zod-utilities";
 
 const PREFIX_DOT_REGEX = /^\./;
@@ -175,133 +174,6 @@ export async function getFirstConfigurationAsync(
 				return configuration;
 			}
 		}
-	}
-
-	throw new Error(`No pendant configuration file found in "${searchDirectory}".`);
-}
-
-const SPECIFIC_FILE_GLOBS = new Array<Bun.Glob>();
-const GENERIC_FILE_GLOBS = new Array<Bun.Glob>();
-
-{
-	const specificAdded = new Set<string>();
-	const genericAdded = new Set<string>();
-	function add(array: Array<Bun.Glob>, set: Set<string>, glob: string): void {
-		if (set.has(glob)) return;
-		set.add(glob);
-		array.push(new Bun.Glob(glob));
-	}
-
-	for (const fileName of FILE_NAMES) {
-		for (const fileExtension of FILE_EXTENSIONS) {
-			const specificFileGlob = `${fileName}.${fileExtension}`;
-			const genericFileGlob = `*.${fileExtension}`;
-
-			add(SPECIFIC_FILE_GLOBS, specificAdded, specificFileGlob);
-			add(GENERIC_FILE_GLOBS, genericAdded, genericFileGlob);
-		}
-	}
-}
-
-function xpcallParse<T>(parse: (source: string) => T, source: string): T {
-	try {
-		return parse(source);
-	} catch (error) {
-		const exception = new Error(
-			`Failed to parse configuration file: ${error instanceof Error ? error.message : String(error)}:\n${source}`,
-		);
-		Error.captureStackTrace(exception, xpcallParse);
-		throw exception;
-	}
-}
-
-async function getConfigurationAsync(filePath: string): Promise<PendantConfiguration | undefined> {
-	const fileExtension = getExtension(filePath).replace(PREFIX_DOT_REGEX, "");
-	const { parse } = ConfigurationFileTypeMeta[resolveConfigurationFileType(fileExtension)];
-
-	const content = await Bun.file(filePath).text().then(makeJsonSafe);
-	const parsed = xpcallParse(parse, content);
-	// const parsed = parse(content);
-
-	const result = await isPendantConfiguration.safeParseAsync(parsed);
-	if (!result.success) return undefined;
-
-	const configuration = result.data;
-	if ("$schema" in configuration) delete configuration.$schema;
-	return configuration;
-}
-
-export async function getFirstConfigurationGlobAsync(
-	searchDirectoryPathLike: Bun.PathLike = process.cwd(),
-): Promise<PendantConfiguration> {
-	const searchDirectory = fromPathLike(searchDirectoryPathLike);
-	for (const fileGlob of SPECIFIC_FILE_GLOBS)
-		for await (const filePath of fileGlob.scan(searchDirectory)) {
-			const configuration = await getConfigurationAsync(filePath);
-			if (configuration) return configuration;
-		}
-
-	for (const fileGlob of GENERIC_FILE_GLOBS)
-		for await (const filePath of fileGlob.scan(searchDirectory)) {
-			const configuration = await getConfigurationAsync(filePath);
-			if (configuration) return configuration;
-		}
-
-	throw new Error(`No pendant configuration file found in "${searchDirectory}".`);
-}
-
-const DOT_START_TRIM_REGEX = /^[.]/;
-function trimStrip(value: string): string {
-	return value.trim().replace(DOT_START_TRIM_REGEX, "");
-}
-
-function brace(values: Iterable<string>): string {
-	return `{${[...new Set(values)].map(trimStrip).join(",")}}`;
-}
-
-const NAME_ALTERNATIONS = brace(FILE_NAMES);
-const EXTENSION_ALTERNATIONS = brace(FILE_EXTENSIONS);
-
-const SPECIFIC_FILE_GLOB = new Bun.Glob(`${NAME_ALTERNATIONS}.${EXTENSION_ALTERNATIONS}`);
-const GENERIC_FILE_GLOB = new Bun.Glob(`*.${EXTENSION_ALTERNATIONS}`);
-
-// eslint-disable-next-line id-length -- i do not care
-export async function getFirstConfigurationGlob2Async(
-	searchDirectoryPathLike: Bun.PathLike = process.cwd(),
-): Promise<PendantConfiguration> {
-	const searchDirectory = fromPathLike(searchDirectoryPathLike);
-
-	for await (const filePath of SPECIFIC_FILE_GLOB.scan(searchDirectory)) {
-		const configuration = await getConfigurationAsync(filePath);
-		if (configuration) return configuration;
-	}
-
-	for await (const filePath of GENERIC_FILE_GLOB.scan(searchDirectory)) {
-		const configuration = await getConfigurationAsync(filePath);
-		if (configuration) return configuration;
-	}
-
-	throw new Error(`No pendant configuration file found in "${searchDirectory}".`);
-}
-
-// eslint-disable-next-line id-length -- i do not care
-export async function getFirstConfigurationGlob3Async(
-	searchDirectoryPathLike: Bun.PathLike = process.cwd(),
-): Promise<PendantConfiguration> {
-	const searchDirectory = fromPathLike(searchDirectoryPathLike);
-	const children = await getFilesAsync(searchDirectory);
-	if (children.length === 0) throw new Error(`No files found in "${searchDirectory}".`);
-
-	for (const childPath of children) {
-		if (!SPECIFIC_FILE_GLOB.match(childPath)) continue;
-		const configuration = await getConfigurationAsync(childPath);
-		if (configuration) return configuration;
-	}
-
-	for (const childPath of children) {
-		if (!GENERIC_FILE_GLOB.match(childPath)) continue;
-		const configuration = await getConfigurationAsync(childPath);
-		if (configuration) return configuration;
 	}
 
 	throw new Error(`No pendant configuration file found in "${searchDirectory}".`);
