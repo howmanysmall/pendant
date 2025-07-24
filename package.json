@@ -47,13 +47,13 @@
 	"scripts": {
 		"build": "bunli build",
 		"build:executable": "bun build ./dist --compile --production --target=bun --outfile=pendant --minify",
-		"create-release": "./scripts/create-release.ts",
+		"create-release": "bun run ./scripts/create-release.ts",
 		"dev": "bun run src/index.ts",
 		"lint:biome": "bun x --bun biome ci",
 		"lint:eslint": "bun x eslint --max-warnings 0 ./src",
 		"lint:fix": "bun run lint --fix",
 		"lint:tsc": "bun x tsc --noEmit",
-		"lint": "./scripts/lint.ts",
+		"lint": "bun run ./scripts/lint.ts",
 		"test": "bun test",
 		"type-check": "bun x tsc --noEmit"
 	},
