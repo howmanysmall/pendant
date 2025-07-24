@@ -1,4 +1,4 @@
-#!/usr/bin/env buns
+#!/usr/bin/env bun
 /* eslint-disable camelcase -- useless */
 /* eslint-disable max-lines-per-function -- annoying */
 
