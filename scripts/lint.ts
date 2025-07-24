@@ -1,11 +1,12 @@
 #!/usr/bin/env bun
 
 import chalk from "chalk";
+import { basename, join } from "node:path";
 
 import parseArguments, { OptionType, type ParsedArguments, type Schema } from "./utilities/parse-arguments";
 import scriptConsole from "./utilities/script-console";
 
-const DEFAULT_FILES = "./src";
+const DEFAULT_FILES = join(process.cwd(), "src");
 // const TSCONFIG_PATH = join(process.cwd(), "tsconfig.json");
 
 const enum ReporterType {
@@ -56,7 +57,7 @@ const SCHEMA = {
 type CommandArguments = ParsedArguments<typeof SCHEMA>;
 const commandArguments: CommandArguments = parseArguments(SCHEMA, Bun.argv.slice(2));
 const splitFiles = commandArguments.files.split(" ").filter((value) => value.trim() !== "");
-const splitFileNames = splitFiles.map((filePath) => filePath.split("/").pop() ?? filePath);
+const splitFileNames = splitFiles.map((filePath) => basename(filePath));
 
 const FAILED_WITH_EXIT_CODE = chalk.gray("failed with exit code");
 
@@ -130,15 +131,21 @@ async function executeBiomeAsync(stringBuilder: Array<string>, markErrorsTrue: (
 	await callback(stringBuilder, markErrorsTrue);
 }
 
+function getCommandForTsc(): Array<string> {
+	if (process.platform === "win32")
+		return commandArguments.files === DEFAULT_FILES
+			? ["bun", "x", "tsc", "--noEmit", "-p", "tsconfig.json"]
+			: ["powershell.exe", "-ExecutionPolicy", "Bypass", "-File", "./scripts/tsc.ps1", ...splitFileNames];
+
+	return commandArguments.files === DEFAULT_FILES
+		? ["bun", "x", "tsc", "--noEmit", "-p", "tsconfig.json"]
+		: ["./scripts/tsc.sh", ...splitFileNames];
+}
+
 async function executeTscAsync(stringBuilder: Array<string>, markErrorsTrue: () => void): Promise<void> {
 	try {
-		const command =
-			commandArguments.files === DEFAULT_FILES
-				? ["bun", "x", "tsc", "--noEmit", "-p", "tsconfig.json"]
-				: ["scripts/tsc.sh", ...splitFileNames];
-
 		const subprocess = Bun.spawn<"ignore", "inherit">({
-			cmd: command,
+			cmd: getCommandForTsc(),
 			stdio: ["ignore", "inherit", "inherit"],
 		});
 		const exitCode = await subprocess.exited;

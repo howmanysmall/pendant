@@ -10,6 +10,9 @@ on:
         required: true
         default: 'v0.1.0'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build for ${{ matrix.platform }}
@@ -81,14 +84,10 @@ jobs:
         shell: bash
 
       - name: Upload release assets
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'release'
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./pendant-${{ matrix.platform }}${{ matrix.extension == '.exe' && '.zip' || '.tar.gz' }}
-          asset_name: pendant-${{ matrix.platform }}${{ matrix.extension == '.exe' && '.zip' || '.tar.gz' }}
-          asset_content_type: ${{ matrix.extension == '.exe' && 'application/zip' || 'application/gzip' }}
+          files: pendant-${{ matrix.platform }}${{ matrix.extension == '.exe' && '.zip' || '.tar.gz' }}
 
       - name: Upload artifacts (for workflow_dispatch)
         if: github.event_name == 'workflow_dispatch'
