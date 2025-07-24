@@ -57,7 +57,7 @@
 		"test": "bun test",
 		"type-check": "bun x tsc --noEmit"
 	},
-	"version": "0.1.0",
+	"version": "0.0.1",
 	"author": {
 		"name": "HowManySmall"
 	},
