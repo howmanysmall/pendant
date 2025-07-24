@@ -2,7 +2,7 @@
 auto = "auto"
 
 [test]
-coverage = true
+coverage = false
 coverageSkipTestFiles = true
 coverageThreshold = 0.75
 root = "./test"

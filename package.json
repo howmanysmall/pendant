@@ -6,7 +6,7 @@
 	"bin": {
 		"pendant": "./dist/index.js"
 	},
-	"description": "Luau kind of sucks at linting itself. This fixes it.",
+	"description": "Luau kind of sucks at linting itself. This fixes it. This is a Luau-LSP wrapper basically.",
 	"name": "pendant",
 	"module": "src/index.ts",
 	"type": "module",
@@ -46,6 +46,8 @@
 	},
 	"scripts": {
 		"build": "bunli build",
+		"build:executable": "bun build ./dist --compile --production --target=bun --outfile=pendant --minify",
+		"create-release": "./scripts/create-release.ts",
 		"dev": "bun run src/index.ts",
 		"lint:biome": "bun x --bun biome ci",
 		"lint:eslint": "bun x eslint --max-warnings 0 ./src",

@@ -286,16 +286,6 @@ export async function copyFileAsync(
 	const sourcePath = fromPathLike(source);
 	const destinationPath = fromPathLike(destination);
 
-	// if (mockMode) {
-	// 	const info = [
-	// 		Bun.inspect(sourcePath, INSPECT_OPTIONS),
-	// 		Bun.inspect(destinationPath, INSPECT_OPTIONS),
-	// 		Bun.inspect(copyFileOptions, INSPECT_OPTIONS),
-	// 	].join(", ");
-	// 	logger.info(`copyFileAsync(${info})`);
-	// 	return 0;
-	// }
-
 	if (createPath) await makeDirectoryAsync(dirname(destinationPath), { mockMode, recursive: true });
 
 	const contents = await readFileAsync(sourcePath, ContentType.Text);
