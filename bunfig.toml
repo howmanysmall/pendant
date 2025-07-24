@@ -2,9 +2,9 @@
 auto = "auto"
 
 [test]
-coverage = false
+coverage = true
 coverageSkipTestFiles = true
-coverageThreshold = 0.75
+coverageThreshold = 0.9
 root = "./test"
 
 [run]

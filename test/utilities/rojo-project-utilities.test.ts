@@ -15,14 +15,15 @@ import {
 } from "utilities/rojo-project-utilities";
 
 // Define regex patterns at module level to satisfy linting rules
-const LOADER_PATH_REGEX = /src\/loader$/;
-const SERVER_PATH_REGEX = /src\/server$/;
-const SHARED_PATH_REGEX = /src\/shared$/;
+// Use platform-agnostic patterns that handle both Unix (/) and Windows (\) path separators
+const LOADER_PATH_REGEX = /src[/\\]loader$/;
+const SERVER_PATH_REGEX = /src[/\\]server$/;
+const SHARED_PATH_REGEX = /src[/\\]shared$/;
 const PACKAGES_PATH_REGEX = /Packages$/;
-const ROOT_PATH_REGEX = /src\/root$/;
-const NESTED_PATH_REGEX = /src\/nested$/;
-const DEEP_PATH_REGEX = /src\/deep$/;
-const ABSOLUTE_LOADER_PATH_REGEX = /^\/.*src\/loader$/;
+const ROOT_PATH_REGEX = /src[/\\]root$/;
+const NESTED_PATH_REGEX = /src[/\\]nested$/;
+const DEEP_PATH_REGEX = /src[/\\]deep$/;
+const ABSOLUTE_LOADER_PATH_REGEX = /^[/\\].*src[/\\]loader$|^[A-Z]:[/\\].*src[/\\]loader$/;
 
 const TEST_PROJECT = "Test Project";
 const LOADER = "src/loader";
@@ -305,6 +306,8 @@ describe("rojo-project-utilities", () => {
 			const result = collectPathsFromRuntimeMap(runtimeMap);
 
 			expect(result[RuntimeContext.Shared]).toHaveLength(3);
+
+			// Use the original regex patterns with platform-agnostic matching
 			expect(result[RuntimeContext.Shared]).toEqual(
 				expect.arrayContaining([
 					expect.stringMatching(ROOT_PATH_REGEX),
