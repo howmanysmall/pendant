@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 import { createCLI } from "@bunli/core";
 
 import analyzeCommand from "commands/analyze";
