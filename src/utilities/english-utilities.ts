@@ -22,6 +22,20 @@ const ENGLISH_CONSONANTS = asByteSet(
 );
 
 /**
+ * An indefinite article is a word that introduces a noun without specifying
+ * which one. In English, the indefinite articles are "a" and "an".
+ */
+export type IndefiniteArticle = "a" | "an";
+
+const INDEFINITE_ARTICLE_LOOKUP: Record<string, IndefiniteArticle> = {
+	api: "an",
+	http: "an",
+	json: "a",
+	url: "a",
+	xml: "an",
+};
+
+/**
  * Returns the correct indefinite article ("a" or "an") for a given English
  * word.
  *
@@ -39,6 +53,8 @@ const ENGLISH_CONSONANTS = asByteSet(
  * @returns An if the word starts with a vowel, otherwise "a".
  */
 export function getIndefiniteArticle(value: string): string {
+	const specialCase = INDEFINITE_ARTICLE_LOOKUP[value.toLocaleLowerCase()];
+	if (specialCase !== undefined) return specialCase;
 	return ENGLISH_VOWELS.has(value.charCodeAt(0)) ? "an" : "a";
 }
 

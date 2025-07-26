@@ -1,11 +1,24 @@
 import RobloxService from "./roblox-service";
 import RuntimeContext from "./runtime-context";
 
-export interface Metadata {
+/**
+ * Metadata describing a Roblox service, including its runtime context.
+ *
+ * @property runtimeContext - The runtime context in which the service operates.
+ */
+export interface RobloxServiceMetadata {
+	/** The runtime context for this service. */
 	readonly runtimeContext: RuntimeContext;
 }
 
-export const RobloxServiceMeta: Readonly<Record<RobloxService, Metadata>> = {
+/**
+ * Metadata for all supported Roblox services.
+ *
+ * @remarks
+ * Maps each {@linkcode RobloxService} to its metadata, including runtime
+ * context.
+ */
+export const RobloxServiceMeta: Readonly<Record<RobloxService, RobloxServiceMetadata>> = {
 	[RobloxService.Chat]: { runtimeContext: RuntimeContext.Shared },
 	[RobloxService.HapticService]: { runtimeContext: RuntimeContext.Shared },
 	[RobloxService.Lighting]: { runtimeContext: RuntimeContext.Shared },

@@ -11,8 +11,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rimraf } from "rimraf";
 
-const GLOBAL_TYPES = "globalTypes.d.luau";
 const SOURCEMAP = "sourcemap.json";
+const GLOBAL_TYPES_FILE = "globalTypes.d.luau";
 
 describe("luau-lsp-runner", () => {
 	let temporaryDirectory: string;
@@ -43,13 +43,13 @@ describe("luau-lsp-runner", () => {
 		});
 
 		describe("buildCommand", () => {
-			it("should build basic command with required options", () => {
+			it("should build basic command with required options", async () => {
 				const options: LuauLspAnalysisOptions = {
 					paths: ["src/", "lib/"],
 				};
 
 				// Access private method for testing
-				const command = (runner as unknown as PrivateLuauLspRunner).buildCommand(options);
+				const command = await (runner as unknown as PrivateLuauLspRunner).buildCommandAsync(options);
 
 				expect(command).toContain("luau-lsp");
 				expect(command).toContain("analyze");
@@ -62,7 +62,7 @@ describe("luau-lsp-runner", () => {
 				expect(command).toContain("lib/");
 			});
 
-			it("should use custom paths when provided", () => {
+			it("should use custom paths when provided", async () => {
 				const options: LuauLspAnalysisOptions = {
 					baseConfigPath: "custom.luaurc",
 					definitionsPath: "custom-types.d.luau",
@@ -71,7 +71,7 @@ describe("luau-lsp-runner", () => {
 					sourcemapPath: "custom-sourcemap.json",
 				};
 
-				const command = (runner as unknown as PrivateLuauLspRunner).buildCommand(options);
+				const command = await (runner as unknown as PrivateLuauLspRunner).buildCommandAsync(options);
 
 				expect(command).toContain("--definitions=custom-types.d.luau");
 				expect(command).toContain("--base-luaurc=custom.luaurc");
@@ -80,12 +80,12 @@ describe("luau-lsp-runner", () => {
 				expect(command).toContain("custom/path");
 			});
 
-			it("should include default ignore patterns", () => {
+			it("should include default ignore patterns", async () => {
 				const options: LuauLspAnalysisOptions = {
 					paths: ["src/"],
 				};
 
-				const command = (runner as unknown as PrivateLuauLspRunner).buildCommand(options);
+				const command = await (runner as unknown as PrivateLuauLspRunner).buildCommandAsync(options);
 
 				expect(command).toContain("--ignore=DevPackages/**/*.{luau,lua}");
 				expect(command).toContain("--ignore=Packages/**/*.{luau,lua}");
@@ -93,24 +93,24 @@ describe("luau-lsp-runner", () => {
 				expect(command).toContain("--ignore=Vendor/**/*.{luau,lua}");
 			});
 
-			it("should include custom ignore patterns", () => {
+			it("should include custom ignore patterns", async () => {
 				const options: LuauLspAnalysisOptions = {
 					ignorePatterns: ["custom/**/*.luau", "temp/**/*.lua"],
 					paths: ["src/"],
 				};
 
-				const command = (runner as unknown as PrivateLuauLspRunner).buildCommand(options);
+				const command = await (runner as unknown as PrivateLuauLspRunner).buildCommandAsync(options);
 
 				expect(command).toContain("--ignore=custom/**/*.luau");
 				expect(command).toContain("--ignore=temp/**/*.lua");
 			});
 
-			it("should handle paths with spaces and special characters", () => {
+			it("should handle paths with spaces and special characters", async () => {
 				const options: LuauLspAnalysisOptions = {
 					paths: ["path with spaces/", "path-with-dashes/", "path_with_underscores/"],
 				};
 
-				const command = (runner as unknown as PrivateLuauLspRunner).buildCommand(options);
+				const command = await (runner as unknown as PrivateLuauLspRunner).buildCommandAsync(options);
 
 				expect(command).toContain("path with spaces/");
 				expect(command).toContain("path-with-dashes/");
@@ -270,7 +270,7 @@ describe("luau-lsp-runner", () => {
 	describe("downloadGlobalTypesAsync", () => {
 		it("should download and save globalTypes.d.luau", async () => {
 			// Mock fetch to return a successful response
-			const mockFetch = spyOn(global, "fetch").mockResolvedValue(
+			const mockFetch = spyOn(Bun, "fetch").mockResolvedValue(
 				new Response("-- Global types content", {
 					status: 200,
 					statusText: "OK",
@@ -279,7 +279,7 @@ describe("luau-lsp-runner", () => {
 
 			const mockWrite = spyOn(Bun, "write").mockResolvedValue(100);
 
-			const targetPath = join(temporaryDirectory, GLOBAL_TYPES);
+			const targetPath = join(temporaryDirectory, GLOBAL_TYPES_FILE);
 			await downloadGlobalTypesAsync(targetPath);
 
 			expect(mockFetch).toHaveBeenCalledWith(
@@ -292,26 +292,28 @@ describe("luau-lsp-runner", () => {
 		});
 
 		it("should handle download failures", async () => {
-			const mockFetch = spyOn(global, "fetch").mockResolvedValue(
+			const mockFetch = spyOn(Bun, "fetch").mockResolvedValue(
 				new Response("Not Found", {
 					status: 404,
 					statusText: "Not Found",
 				}),
 			);
 
-			const targetPath = join(temporaryDirectory, GLOBAL_TYPES);
+			const targetPath = join(temporaryDirectory, GLOBAL_TYPES_FILE);
 
-			expect(downloadGlobalTypesAsync(targetPath)).rejects.toThrow("Failed to download: 404 Not Found");
+			// eslint-disable-next-line ts/await-thenable, ts/no-confusing-void-expression -- required
+			await expect(downloadGlobalTypesAsync(targetPath)).rejects.toThrow("Failed to download: 404 Not Found");
 
 			mockFetch.mockRestore();
 		});
 
 		it("should handle network errors", async () => {
-			const mockFetch = spyOn(global, "fetch").mockRejectedValue(new Error("Network error"));
+			const mockFetch = spyOn(Bun, "fetch").mockRejectedValue(new Error("Network error"));
 
-			const targetPath = join(temporaryDirectory, GLOBAL_TYPES);
+			const targetPath = join(temporaryDirectory, GLOBAL_TYPES_FILE);
 
-			expect(downloadGlobalTypesAsync(targetPath)).rejects.toThrow("Network error");
+			// eslint-disable-next-line ts/await-thenable, ts/no-confusing-void-expression -- required
+			await expect(downloadGlobalTypesAsync(targetPath)).rejects.toThrow("Network error");
 
 			mockFetch.mockRestore();
 		});

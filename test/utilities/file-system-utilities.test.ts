@@ -193,7 +193,7 @@ describe("file-system-utilities", () => {
 			const testFile = join(temporaryDirectory, "output.txt");
 			const content = HELLO_WORLD;
 
-			const bytesWritten = await writeFileAsync(testFile, content);
+			const bytesWritten = await writeFileAsync(testFile, content, { createPath: true });
 
 			expect(bytesWritten).toBeGreaterThan(0);
 

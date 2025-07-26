@@ -1,0 +1,11 @@
+# Project place file
+/code.rbxlx
+
+# Roblox Studio lock files
+/*.rbxlx.lock
+/*.rbxl.lock
+
+/globalTypes.d.luau
+/globalTypes.d.lua
+/problematic
+/sourcemap.json

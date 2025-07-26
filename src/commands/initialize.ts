@@ -4,7 +4,7 @@ import generateSchemaAsync from "functions/generate-schema-async";
 import { createNamespaceLogger } from "logging/logger-utilities";
 import { z } from "zod/v4-mini";
 
-const logger = createNamespaceLogger("initialize");
+const _logger = createNamespaceLogger("initialize");
 
 // what the initialize command does:
 // 1. Generate schema file

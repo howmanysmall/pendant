@@ -94,16 +94,54 @@ export function logMemoryUsage(context?: string): void {
 	logger.info(`Memory usage${formattedContext}`, { memoryUsage });
 }
 
+/**
+ * Represents a logger for tracking a single HTTP request lifecycle.
+ *
+ * @example
+ *
+ * ```typescript
+ * const logger: RequestLogger = ...;
+ * logger.logResponse(200, 123);
+ * ```
+ *
+ * @property correlationId - Unique identifier for the request (UUID v4).
+ * @property logResponse - Logs the response status and optional timing.
+ * @property requestLogger - Logger instance for this request.
+ */
 export interface RequestLogger {
+	/** Unique identifier for the request (UUID v4). */
 	readonly correlationId: `${string}-${string}-${string}-${string}-${string}`;
+	/** Logs the response status and optional timing. */
 	readonly logResponse: (statusCode: number, responseTime?: number) => void;
+	/** Logger instance for this request. */
 	readonly requestLogger: Logger;
 }
+
+/**
+ * Parameters describing an incoming HTTP request for logging purposes.
+ *
+ * @example
+ *
+ * ```typescript
+ * const params: RequestParameters = { method: "GET", url: "/api" };
+ * ```
+ *
+ * @property headers - Optional HTTP headers.
+ * @property ip - Optional client IP address.
+ * @property method - Optional HTTP method (GET, POST, etc).
+ * @property url - Optional request URL.
+ * @property userId - Optional user identifier.
+ */
 export interface RequestParameters {
+	/** Optional HTTP headers. */
 	readonly headers?: Record<string, unknown>;
+	/** Optional client IP address. */
 	readonly ip?: string;
+	/** Optional HTTP method (GET, POST, etc). */
 	readonly method?: string;
+	/** Optional request URL. */
 	readonly url?: string;
+	/** Optional user identifier. */
 	readonly userId?: string;
 }
 

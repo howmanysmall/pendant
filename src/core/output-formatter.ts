@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import type RuntimeContext from "meta/runtime-context";
 import RuntimeContextMeta from "meta/runtime-context-meta";
+import prettyMilliseconds from "pretty-ms";
 import { pluralize } from "utilities/english-utilities";
 
 /** Represents a single analysis issue found by luau-lsp. */
@@ -36,8 +37,6 @@ export interface ContextAnalysisResult {
  * processing.
  */
 export interface FormattedAnalysisResult {
-	/** The formatted string output suitable for console display. */
-	readonly formattedOutput: string;
 	/** A map of runtime contexts to the number of issues found in each. */
 	readonly issuesByContext: ReadonlyMap<RuntimeContext, number>;
 	/**
@@ -45,6 +44,8 @@ export interface FormattedAnalysisResult {
 	 * tools.
 	 */
 	readonly problemsFileContent: string;
+	/** The string builder output for console display. */
+	readonly stringBuilder: ReadonlyArray<string>;
 	/** The total number of issues found across all contexts. */
 	readonly totalIssues: number;
 }
@@ -136,22 +137,20 @@ export function formatAnalysisResults(
 	}
 
 	const totalIssues = allIssues.length;
-	const stringBuilder = new Array<string>();
-
-	// Main status line
-	const statusLine = isWatchMode
-		? `[${getTime()}] Found ${formatNumber(totalIssues)} ${pluralize(totalIssues, "issue")}. Watching for file changes.`
-		: `[${getTime()}] Analysis complete. Found ${formatNumber(totalIssues)} ${pluralize(totalIssues, "issue")}.`;
-
-	stringBuilder.push(statusLine);
+	const stringBuilder = [
+		// Main status line
+		isWatchMode
+			? `[${getTime()}] Found ${formatNumber(totalIssues)} ${pluralize(totalIssues, "issue")}. Watching for file changes.`
+			: `[${getTime()}] Analysis complete. Found ${formatNumber(totalIssues)} ${pluralize(totalIssues, "issue")}.`,
+	];
+	let length = 1;
 
 	// Context breakdown
 	for (const [context, count] of issuesByContext)
 		if (count > 0) {
 			const { name, chalkInstance = BOLD, emoji } = RuntimeContextMeta[context];
-			stringBuilder.push(
-				`\t${emoji} ${chalkInstance(name)}: ${formatNumber(count)} ${pluralize(count, "issue")}`,
-			);
+			stringBuilder[length++] =
+				`\t${emoji} ${chalkInstance(name)}: ${formatNumber(count)} ${pluralize(count, "issue")}`;
 		}
 
 	// Generate problems file content (raw issues for external tools)
@@ -159,12 +158,15 @@ export function formatAnalysisResults(
 		.map((issue) => `${issue.filePath} [${issue.line}:${issue.column}] ${issue.message}`)
 		.join("\n");
 
-	return {
-		formattedOutput: stringBuilder.join("\n"),
-		issuesByContext,
-		problemsFileContent,
-		totalIssues,
-	};
+	return { issuesByContext, problemsFileContent, stringBuilder, totalIssues };
+}
+
+const MATCH_NUMBER_REGEX = /\d+\.?\d*/g;
+function colorNumber(match: string): string {
+	return chalk.bold.cyan(match);
+}
+function colorifyNumbersInString(value: string): string {
+	return value.replace(MATCH_NUMBER_REGEX, colorNumber);
 }
 
 /**
@@ -175,5 +177,10 @@ export function formatAnalysisResults(
  * @returns A formatted string representing the duration.
  */
 export function formatPerformanceInfo(durationMs: number): string {
-	return durationMs < 1000 ? `${Math.round(durationMs)}ms` : `${(durationMs / 1000).toFixed(2)}s`;
+	return colorifyNumbersInString(
+		prettyMilliseconds(durationMs, {
+			formatSubMilliseconds: true,
+			unitCount: 3,
+		}),
+	);
 }

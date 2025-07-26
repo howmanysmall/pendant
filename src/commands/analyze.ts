@@ -26,7 +26,7 @@ export const analyzeCommand = defineCommand({
 	name: "analyze",
 	description: "Analyzes the project using luau-lsp with runtime context awareness.",
 	handler: async ({ colors, flags, spinner }) => {
-		const { addProblems, configurationFile, grab, timeout, verbose, watch } = flags;
+		const { configurationFile, grab, timeout, verbose, watch } = flags;
 		const commandSpinner = spinner();
 
 		try {
@@ -53,7 +53,7 @@ export const analyzeCommand = defineCommand({
 
 			if (verbose) {
 				logger.info(`Project name: ${rojoProject.name}`);
-				logger.info(`Runtime paths: ${Bun.inspect(paths, { colors: true })}`);
+				logger.info(`Runtime paths: ${Bun.inspect(paths, { colors: true, compact: false })}`);
 			}
 
 			// Initialize analysis coordinator
@@ -66,10 +66,10 @@ export const analyzeCommand = defineCommand({
 
 			// Build ignore patterns
 			const ignorePatterns = new Array<string>();
-
-			if (addProblems && configuration.knownProblematicFiles) {
-				for (const file of configuration.knownProblematicFiles) ignorePatterns.push(file);
-				if (verbose) logger.info(`Added ${ignorePatterns.length} problematic file patterns to ignore list`);
+			if (configuration.ignoreGlobs) {
+				let size = 0;
+				for (const file of configuration.ignoreGlobs) ignorePatterns[size++] = file;
+				if (verbose) logger.info(`Added ${size} problematic file patterns to ignore list`);
 			}
 
 			const analysisOptions = {
@@ -97,10 +97,6 @@ export const analyzeCommand = defineCommand({
 		}
 	},
 	options: {
-		addProblems: option(z._default(z.boolean(), false), {
-			description: "Adds the problematic files.",
-			short: "a",
-		}),
 		configurationFile: option(z.optional(z.string()), {
 			description: "The configuration file to use for the analysis.",
 			short: "c",

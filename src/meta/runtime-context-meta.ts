@@ -4,14 +4,33 @@ import type { PendantConfiguration } from "utilities/configuration-utilities";
 
 import RuntimeContext from "./runtime-context";
 
-export interface Metadata {
+/**
+ * Metadata describing a runtime context (Client, Server, Shared, etc).
+ *
+ * @property name - Human-readable name for the context.
+ * @property emoji - Emoji representing the context.
+ * @property keyName - Key used in configuration files.
+ * @property chalkInstance - (Optional) Chalk instance for colored output.
+ */
+export interface RuntimeContextMetadata {
+	/** Optional Chalk instance for colored output. */
 	readonly chalkInstance?: ChalkInstance;
+	/** Emoji representing the context. */
 	readonly emoji: string;
+	/** Key used in configuration files. */
 	readonly keyName: keyof PendantConfiguration["files"];
+	/** Human-readable name for the context. */
 	readonly name: string;
 }
 
-export const RuntimeContextMeta: Readonly<Record<RuntimeContext, Metadata>> = {
+/**
+ * Metadata for all supported runtime contexts.
+ *
+ * @remarks
+ * Maps each {@linkcode RuntimeContext} to its metadata for display,
+ * configuration, and formatting.
+ */
+export const RuntimeContextMeta: Readonly<Record<RuntimeContext, RuntimeContextMetadata>> = {
 	[RuntimeContext.Client]: {
 		name: "Client",
 		chalkInstance: chalk.bold.green,

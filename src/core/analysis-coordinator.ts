@@ -14,6 +14,23 @@ import {
 
 const logger = createNamespaceLogger("analysis-coordinator");
 
+function updateStringBuilder(
+	stringBuilder: ReadonlyArray<string>,
+	duration: number,
+	watchMode = false,
+): ReadonlyArray<string> {
+	const firstMessage = stringBuilder[0];
+	if (firstMessage !== undefined) {
+		const timerOutput = watchMode
+			? `Finished in ${formatPerformanceInfo(duration)}.`
+			: `Completed in ${formatPerformanceInfo(duration)}.`;
+
+		return [`${firstMessage} ${timerOutput}`, ...stringBuilder.slice(1)];
+	}
+
+	return stringBuilder;
+}
+
 /** Defines the options for the analysis process. */
 export interface AnalysisOptions {
 	/** Optional list of glob patterns to ignore during analysis. */
@@ -124,20 +141,17 @@ export default class AnalysisCoordinator {
 			}
 
 			// Format and display results
-			const formatted = formatAnalysisResults(results, options.watchMode);
+			const { problemsFileContent, stringBuilder } = formatAnalysisResults(results, options.watchMode);
 			const duration = bunPerformanceNow() - startTime;
 
 			// Write problems file only if content changed
-			if (this.lastProblematicContent !== formatted.problemsFileContent) {
-				this.lastProblematicContent = formatted.problemsFileContent;
-				await Bun.write(options.outputFile, formatted.problemsFileContent);
+			if (this.lastProblematicContent !== problemsFileContent) {
+				this.lastProblematicContent = problemsFileContent;
+				await Bun.write(options.outputFile, problemsFileContent);
 			}
 
 			// Display results
-			const finalOutput = options.watchMode
-				? `${formatted.formattedOutput} Finished in ${formatPerformanceInfo(duration)}.`
-				: `${formatted.formattedOutput} Completed in ${formatPerformanceInfo(duration)}.`;
-
+			const finalOutput = updateStringBuilder(stringBuilder, duration, options.watchMode).join("\n");
 			consoleInfo(finalOutput);
 		} catch (error) {
 			logger.error(`Analysis failed: ${error}`);

@@ -13,5 +13,6 @@ skim = "skim-rs/skim@0.20.2"          # replaces fzf
 zoxide = "ajeetdsouza/zoxide@0.9.8"   # replaces cd
 
 hyperfine = "sharkdp/hyperfine@1.19.0"
+luau-lsp = "JohnnyMorganz/luau-lsp@1.52.1"
 pastel = "sharkdp/pastel@0.10.0"
 scc = "boyter/scc@3.5.0"

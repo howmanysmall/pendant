@@ -1,4 +1,6 @@
+import chalk from "chalk";
 import { createNamespaceLogger } from "logging/logger-utilities";
+import { addQuoted, removeQuotes } from "utilities/string-utilities";
 
 const logger = createNamespaceLogger("luau-lsp-runner");
 
@@ -42,7 +44,11 @@ export interface LuauLspResult {
 }
 
 export interface PrivateLuauLspRunner {
-	buildCommand(options: LuauLspAnalysisOptions): ReadonlyArray<string>;
+	buildCommandAsync(options: LuauLspAnalysisOptions): Promise<ReadonlyArray<string>>;
+}
+
+function isString(value: string | undefined): value is string {
+	return value !== undefined;
 }
 
 /** Core runner for luau-lsp analyze command. */
@@ -55,7 +61,7 @@ export class LuauLspRunner {
 	 * @returns Promise resolving to the analysis result.
 	 */
 	public async executeAnalysisAsync(options: LuauLspAnalysisOptions): Promise<LuauLspResult> {
-		const command = this.buildCommand(options);
+		const command = await this.buildCommandAsync(options);
 		if (options.verbose) logger.debug(`Executing: ${command.join(" ")}`);
 
 		try {
@@ -101,23 +107,40 @@ export class LuauLspRunner {
 	 *   settings.
 	 * @returns Array of command-line arguments for luau-lsp analyze.
 	 */
-	private buildCommand(options: LuauLspAnalysisOptions): ReadonlyArray<string> {
+	private async buildCommandAsync(options: LuauLspAnalysisOptions): Promise<ReadonlyArray<string>> {
 		const command = [
 			"luau-lsp",
 			"analyze",
 			`--definitions=${options.definitionsPath ?? "globalTypes.d.luau"}`,
-			`--base-luaurc=${options.baseConfigPath ?? ".luaurc"}`,
-			`--sourcemap=${options.sourcemapPath ?? "sourcemap.json"}`,
-			`--settings=${options.settingsPath ?? ".vscode/settings.json"}`,
 			"--no-strict-dm-types",
 		];
 
+		const settingsPath = options.settingsPath ?? ".vscode/settings.json";
+		if (await Bun.file(settingsPath).exists()) command.push(`--settings=${settingsPath}`);
+
+		const sourcemapPath = options.sourcemapPath ?? "sourcemap.json";
+		if (await Bun.file(sourcemapPath).exists()) command.push(`--sourcemap=${sourcemapPath}`);
+
+		const baseConfigPath = options.baseConfigPath ?? ".luaurc";
+		if (await Bun.file(baseConfigPath).exists()) command.push(`--base-luaurc=${baseConfigPath}`);
+
+		const patterns = [...DEFAULT_IGNORES, ...(options.ignorePatterns ?? [])];
+
+		const results = await Promise.all(
+			patterns.map(async (pattern) => {
+				const iterator = new Bun.Glob(pattern).scan({ cwd: this.cwd });
+				const { done } = await iterator.next();
+				return done ? undefined : pattern;
+			}),
+		);
+
 		// Add all ignore patterns
-		for (const pattern of [...DEFAULT_IGNORES, ...(options.ignorePatterns ?? [])])
-			command.push(`--ignore=${pattern}`);
+		for (const pattern of results.filter(isString)) command.push(`--ignore=${addQuoted(removeQuotes(pattern))}`);
 
 		// Add target paths
 		command.push(...options.paths);
+
+		if (options.verbose) logger.info(`Final command:\n${chalk.bold(command.join(" "))}`);
 
 		return command;
 	}

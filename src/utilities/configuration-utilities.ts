@@ -1,6 +1,6 @@
 import logger from "logging/logger";
 import type ConfigurationFileType from "meta/configuration-file-type";
-import ConfigurationFileTypeMeta, { type Metadata } from "meta/configuration-file-type-meta";
+import ConfigurationFileTypeMeta, { type ConfigurationFileTypeMetadata } from "meta/configuration-file-type-meta";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { ContentType, fromPathLike, readFileAsync } from "utilities/file-system-utilities";
@@ -42,10 +42,13 @@ export const isPendantConfiguration = readonlyObject({
 		}),
 	}),
 
-	/** Files that are known to be problems. These will be ignored. */
-	knownProblematicFiles: z.optional(readonlyArray(z.string())).register(z.globalRegistry, {
+	/**
+	 * Globs of files to be ignored. These files will not be analyzed or
+	 * included in the output.
+	 */
+	ignoreGlobs: z.optional(readonlyArray(z.string())).register(z.globalRegistry, {
 		deprecated: false,
-		description: "Files that are known to be problems. These will be ignored.",
+		description: "Globs of files to be ignored. These files will not be analyzed or included in the output.",
 	}),
 
 	/**
@@ -113,7 +116,7 @@ const FILE_EXTENSIONS = new Array<string>();
 }
 
 const ALL_ENTRIES = Object.entries(ConfigurationFileTypeMeta) as unknown as ReadonlyArray<
-	readonly [ConfigurationFileType, Metadata]
+	readonly [ConfigurationFileType, ConfigurationFileTypeMetadata]
 >;
 const extensionToFileTypeCache = new Map<string, ConfigurationFileType>();
 

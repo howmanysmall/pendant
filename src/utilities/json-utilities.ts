@@ -1,8 +1,18 @@
 import { addQuoted, escapeString, getSignificantDigits } from "./string-utilities";
 
+/**
+ * Enumerates string escaping strategies for JSON encoding.
+ *
+ * @remarks
+ * Used by {@linkcode prettyJsonStringify} and related utilities to control how
+ * strings are escaped.
+ */
 export const enum StringEscapeType {
+	/** Use the escapeString function for escaping. */
 	EscapeFunction = 0,
+	/** Do not escape strings. */
 	None = 1,
+	/** Add quotes and escape special characters. */
 	Quoted = 2,
 }
 
@@ -16,6 +26,11 @@ export interface Options {
 	readonly shouldUseSortFunction?: (object: Record<string, unknown>) => boolean;
 	/** Custom sorting function for object keys. */
 	readonly sortKeys?: (a: string, b: string) => number;
+	/**
+	 * Controls how strings are escaped in the output.
+	 *
+	 * @see StringEscapeType
+	 */
 	readonly stringEscapeType?: StringEscapeType;
 }
 

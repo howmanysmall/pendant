@@ -57,7 +57,12 @@
 		"lint:tsc": "bun x tsc --noEmit",
 		"lint": "bun run ./scripts/lint.ts",
 		"test": "bun test",
-		"type-check": "bun x tsc --noEmit"
+		"type-check": "bun x tsc --noEmit",
+
+		"analyze:a": "cd code/codebase-a && bun run ../../src/index.ts analyze && cd -",
+		"analyze:a:verbose": "cd code/codebase-a && bun run ../../src/index.ts analyze -V && cd -",
+		"analyze:missing": "cd code/codebase-missing && bun run ../../src/index.ts analyze && cd -",
+		"analyze:missing:verbose": "cd code/codebase-missing && bun run ../../src/index.ts analyze -V && cd -"
 	},
 	"version": "0.1.0",
 	"author": {

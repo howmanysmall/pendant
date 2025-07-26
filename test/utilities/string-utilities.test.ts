@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { escapeString, getSignificantDigits, addQuoted } from "utilities/string-utilities";
+import { addQuoted, escapeString, getSignificantDigits } from "utilities/string-utilities";
 
 describe("string-utilities", () => {
 	describe("escapeString", () => {
@@ -21,7 +21,7 @@ describe("string-utilities", () => {
 		});
 
 		it("should handle mixed content", () => {
-			expect(escapeString('hello\nworld"test\\')).toBe('hello\\u000aworld\\u0022test\\u005c');
+			expect(escapeString('hello\nworld"test\\')).toBe("hello\\u000aworld\\u0022test\\u005c");
 		});
 
 		it("should handle empty string", () => {
@@ -33,9 +33,10 @@ describe("string-utilities", () => {
 		});
 
 		it("should escape all control characters (0x00-0x1f)", () => {
-			for (let i = 0; i <= 0x1f; i++) {
-				const char = String.fromCharCode(i);
-				const escaped = escapeString(char);
+			for (let index = 0; index <= 0x1f; index += 1) {
+				const character = String.fromCharCode(index);
+				const escaped = escapeString(character);
+
 				expect(escaped).toMatch(/\\u[0-9a-f]{4}/);
 			}
 		});
@@ -56,18 +57,21 @@ describe("string-utilities", () => {
 		it("should handle floating point precision issues", () => {
 			// Test cases where floating point precision matters
 			const result = getSignificantDigits(0.1 + 0.2);
+
 			expect(typeof result).toBe("string");
 			expect(Number(result)).toBeCloseTo(0.3);
 		});
 
 		it("should handle very small numbers", () => {
 			const result = getSignificantDigits(1e-10);
+
 			expect(typeof result).toBe("string");
 			expect(Number(result)).toBe(1e-10);
 		});
 
 		it("should handle very large numbers", () => {
 			const result = getSignificantDigits(1e10);
+
 			expect(typeof result).toBe("string");
 			expect(Number(result)).toBe(1e10);
 		});
@@ -81,6 +85,7 @@ describe("string-utilities", () => {
 			// Test that it finds the shortest accurate representation
 			const number = 1.0000000000000002;
 			const result = getSignificantDigits(number);
+
 			expect(Number(result)).toBe(number);
 		});
 
@@ -90,17 +95,24 @@ describe("string-utilities", () => {
 		});
 
 		it("should preserve accuracy for complex decimals", () => {
-			const testNumbers = [
-				Math.PI,
-				Math.E,
-				1 / 3,
-				1 / 7,
-				Math.sqrt(2),
-			];
+			const testNumbers = [Math.PI, Math.E, 1 / 3, 1 / 7, Math.sqrt(2)];
 
-			for (const num of testNumbers) {
-				const result = getSignificantDigits(num);
-				expect(Number(result)).toBe(num);
+			for (const number of testNumbers) {
+				const result = getSignificantDigits(number);
+
+				expect(Number(result)).toBe(number);
+			}
+		});
+
+		it("should handle numbers that require precision adjustments", () => {
+			// Test numbers that will trigger the binary search algorithm
+			const problematicNumbers = [1.9999999999999998, 0.123456789012345, 1.000000000000001];
+
+			for (const number of problematicNumbers) {
+				const result = getSignificantDigits(number);
+
+				expect(Number(result)).toBe(number);
+				expect(typeof result).toBe("string");
 			}
 		});
 	});
@@ -131,7 +143,7 @@ describe("string-utilities", () => {
 		});
 
 		it("should handle all escape sequences", () => {
-			expect(addQuoted("test\n\r\0\"\\more")).toBe('"test\\n\\r\\0\\"\\\\more"');
+			expect(addQuoted('test\n\r\0"\\more')).toBe('"test\\n\\r\\0\\"\\\\more"');
 		});
 
 		it("should preserve regular characters", () => {
@@ -167,11 +179,12 @@ describe("string-utilities", () => {
 				"text with\nlinebreak",
 				'text with "quotes"',
 				"text with \\ backslash",
-				"mixed\nspecial\"chars\\here",
+				'mixed\nspecial"chars\\here',
 			];
 
-			for (const str of testStrings) {
-				const quoted = addQuoted(str);
+			for (const testString of testStrings) {
+				const quoted = addQuoted(testString);
+
 				expect(quoted.startsWith('"')).toBe(true);
 				expect(quoted.endsWith('"')).toBe(true);
 			}

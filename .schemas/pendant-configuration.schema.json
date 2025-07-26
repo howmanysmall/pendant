@@ -1,9 +1,10 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
 	"additionalProperties": false,
+	"deprecated": false,
 	"description": "A configuration for the pendant tool. This is how you can configure the tool to your liking.",
 	"patternProperties": {
-		"^\\$schema$": {
+		"^\u005c$schema$": {
 			"description": "JSON Schema meta-schema URI (editor hint)",
 			"format": "any",
 			"type": "string"
@@ -12,30 +13,40 @@
 	"properties": {
 		"files": {
 			"additionalProperties": false,
-			"description": "How you configure the contexts for files. These are globs.",
 			"properties": {
-				"additionalProperties": false,
 				"client": {
+					"deprecated": false,
 					"description": "The files to include for the client context.",
-					"items": { "type": "string" },
+					"items": {
+						"type": "string"
+					},
 					"readOnly": true,
 					"type": "array"
 				},
 				"server": {
-					"description": "The files to include for the server context.",
-					"items": { "type": "string" },
+					"deprecated": false,
+					"description": "The files to include for the client context.",
+					"items": {
+						"type": "string"
+					},
 					"readOnly": true,
 					"type": "array"
 				},
 				"shared": {
+					"deprecated": false,
 					"description": "The files to include for the shared context.",
-					"items": { "type": "string" },
+					"items": {
+						"type": "string"
+					},
 					"readOnly": true,
 					"type": "array"
 				},
 				"testing": {
-					"description": "The files to include for the testing context.",
-					"items": { "type": "string" },
+					"deprecated": false,
+					"description": "The files to include for the testing context. Not required.",
+					"items": {
+						"type": "string"
+					},
 					"readOnly": true,
 					"type": "array"
 				}
@@ -44,32 +55,39 @@
 			"required": ["client", "server", "shared"],
 			"type": "object"
 		},
-
-		"knownProblematicFiles": {
-			"description": "Files that are known to be problems.",
-			"items": { "type": "string" },
+		"ignoreGlobs": {
+			"deprecated": false,
+			"description": "Globs of files to be ignored. These files will not be analyzed or included in the output.",
+			"items": {
+				"type": "string"
+			},
 			"readOnly": true,
 			"type": "array"
 		},
-
 		"outputFileName": {
 			"default": "problematic",
+			"deprecated": false,
 			"description": "The name of the file to output the analysis results to. Defaults to `problematic`.",
 			"type": "string"
 		},
-
+		"packageGlobs": {
+			"deprecated": false,
+			"description": "The globs to use for packages - as in stuff you install from Wally or something.",
+			"items": {
+				"type": "string"
+			},
+			"readOnly": true,
+			"type": "array"
+		},
 		"projectFile": {
 			"default": "default.project.json",
+			"deprecated": false,
 			"description": "The project file to use for the pendant tool. Defaults to `default.project.json`.",
-			"pattern": "^.*\\.project\\.json$",
+			"pattern": "^.*\u005c.project\u005c.json$",
 			"type": "string"
-		},
-
-		"readOnly": true
+		}
 	},
-
 	"readOnly": true,
 	"required": ["files"],
-	"title": "PendantConfiguration",
 	"type": "object"
 }

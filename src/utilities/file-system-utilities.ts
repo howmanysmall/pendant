@@ -53,12 +53,31 @@ export const enum FileType {
 	File = 1,
 }
 
+/**
+ * Enumerates supported content types for file reading and writing operations.
+ *
+ * Used to specify the format in which file data should be interpreted or
+ * returned.
+ *
+ * @remarks
+ * This enum is used by {@linkcode readFileAsync} and related utilities to
+ * control file decoding.
+ */
 export const enum ContentType {
+	/** Read or write as an ArrayBuffer. */
 	ArrayBuffer = 0,
+	/** Read or write as a Uint8Array of bytes. */
 	Bytes = 1,
+	/** Read or write as FormData (for multipart/form-data). */
 	FormData = 2,
+	/** Read or write as parsed JSON. */
 	Json = 3,
+	/**
+	 * Read or write as JSON, but with additional safety (e.g., comments
+	 * allowed).
+	 */
 	JsonSafe = 4,
+	/** Read or write as plain text. */
 	Text = 5,
 }
 
@@ -180,7 +199,7 @@ const BUFFER_EXISTS = typeof Buffer !== "undefined";
  *   URL, or supported buffer/typed array.
  * @returns The string representation of the path.
  * @throws {TypeError} If the input type is not supported.
- * @see {@link PathLike}
+ * @see {@linkcode PathLike}
  */
 export function fromPathLike(pathLike: PathLike): string {
 	if (typeof pathLike === "string") return pathLike;
@@ -199,20 +218,77 @@ export function fromPathLike(pathLike: PathLike): string {
 	throw new TypeError(`Unsupported path type: ${Object.prototype.toString.call(pathLike)}`);
 }
 
+/**
+ * Reads a file as an ArrayBuffer.
+ *
+ * @param pathLike - The path to the file to read.
+ * @param contentType - Must be ContentType.ArrayBuffer.
+ * @returns The file contents as an ArrayBuffer.
+ */
 export async function readFileAsync(pathLike: PathLike, contentType: ContentType.ArrayBuffer): Promise<ArrayBuffer>;
+/**
+ * Reads a file as a byte array (Uint8Array).
+ *
+ * @param pathLike - The path to the file to read.
+ * @param contentType - Must be ContentType.Bytes.
+ * @returns The file contents as a Uint8Array.
+ */
 export async function readFileAsync(pathLike: PathLike, contentType: ContentType.Bytes): Promise<Uint8Array>;
+/**
+ * Reads a file as FormData.
+ *
+ * @param pathLike - The path to the file to read.
+ * @param contentType - Must be ContentType.FormData.
+ * @returns The file contents as FormData.
+ */
 export async function readFileAsync(pathLike: PathLike, contentType: ContentType.FormData): Promise<FormData>;
+/**
+ * Reads a file as JSON and validates it with an optional Zod schema.
+ *
+ * @template T - The expected type of the parsed JSON.
+ * @param pathLike - The path to the file to read.
+ * @param contentType - Must be ContentType.Json.
+ * @param validator - Optional Zod schema for validation.
+ * @returns The parsed and validated JSON.
+ */
 export async function readFileAsync<T = unknown>(
 	pathLike: PathLike,
 	contentType: ContentType.Json,
 	validator?: z.ZodMiniType<T>,
 ): Promise<T>;
+/**
+ * Reads a file as JSON (with additional safety, e.g., comments allowed) and
+ * validates it with an optional Zod schema.
+ *
+ * @template T - The expected type of the parsed JSON.
+ * @param pathLike - The path to the file to read.
+ * @param contentType - Must be ContentType.JsonSafe.
+ * @param validator - Optional Zod schema for validation.
+ * @returns The parsed and validated JSON.
+ */
 export async function readFileAsync<T = unknown>(
 	pathLike: PathLike,
 	contentType: ContentType.JsonSafe,
 	validator?: z.ZodMiniType<T>,
 ): Promise<T>;
+/**
+ * Reads a file as plain text.
+ *
+ * @param pathLike - The path to the file to read.
+ * @param contentType - Must be ContentType.Text.
+ * @returns The file contents as a string.
+ */
 export async function readFileAsync(pathLike: PathLike, contentType: ContentType.Text): Promise<string>;
+/**
+ * Reads a file asynchronously and decodes it according to the specified content
+ * type.
+ *
+ * @param pathLike - The path to the file to read.
+ * @param contentType - The format in which to decode the file's contents.
+ * @param validator - (Optional) Zod validator for JSON/JsonSafe content types.
+ * @returns The file contents, decoded as specified by `contentType`.
+ * @throws {Error} If the file does not exist or cannot be read.
+ */
 export async function readFileAsync(
 	pathLike: PathLike,
 	contentType: ContentType,
@@ -266,7 +342,7 @@ export async function readFileAsync(
 	}
 }
 
-/** Options for {@link copyFileAsync}, extending write-file options. */
+/** Options for {@linkcode copyFileAsync}, extending write-file options. */
 export interface CopyFileOptions extends WriteFileOptions {}
 
 /**
@@ -364,7 +440,7 @@ export async function makeDirectoryAsync(
  *   recursive.
  * @property signal - Optional abort signal to cancel the operation.
  * @property tmp - Temporary directory to use for intermediate operations.
- * @see {@link rimraf}
+ * @see {@linkcode rimraf}
  */
 
 /**
@@ -386,7 +462,7 @@ export async function makeDirectoryAsync(
  *   if not recursive. Defaults to `100`.
  * @property signal - Optional abort signal to cancel the operation.
  * @property tmp - Temporary directory to use for intermediate operations.
- * @see {@link rimraf}
+ * @see {@linkcode rimraf}
  */
 export interface RemoveFileOptions extends WithMockMode {
 	/** Custom backoff time in milliseconds between retries. */
@@ -470,7 +546,7 @@ export async function removeFileAsync(
  *
  * @property createPath - If `true`, creates the parent directory if missing. If
  *   `false`, throws if the directory does not exist. Defaults to `true`.
- * @see {@link writeFileAsync}
+ * @see {@linkcode writeFileAsync}
  */
 export interface WriteFileCreateOptions extends WithMockMode {
 	/**
@@ -508,7 +584,7 @@ export async function writeFileAsync(
 	writeFileOptions?: WriteFileOptions,
 ): Promise<number>;
 /**
- * Persist a {@link Response} body to disk.
+ * Persist a {@linkcode Response} body to disk.
  *
  * @param destination - The file to write to. If the file doesn't exist, it will
  *   be created and if the file does exist, it will be overwritten. If
@@ -524,7 +600,7 @@ export async function writeFileAsync(
 	writeFileOptions?: WriteFileCreateOptions,
 ): Promise<number>;
 /**
- * Persist a {@link Response} body to disk.
+ * Persist a {@linkcode Response} body to disk.
  *
  * @param destinationPath - The file path to write to. If the file doesn't
  *   exist, it will be created and if the file does exist, it will be
@@ -586,6 +662,23 @@ export async function writeFileAsync(
 	input: BunFile,
 	writeFileOptions?: WriteFileCreateOptions,
 ): Promise<number>;
+/**
+ * Writes content to a file asynchronously, supporting various content types and
+ * destinations.
+ *
+ * @example
+ *
+ * ```typescript
+ * await writeFileAsync("foo.txt", "Hello, world!");
+ * ```
+ *
+ * @param destination - The file path, BunFile, or S3File to write to.
+ * @param content - The content to write (string, buffer, Blob, Response, etc).
+ * @param writeFileOptions - Optional options for writing (e.g., mock mode,
+ *   permissions).
+ * @returns The number of bytes written (or 0 in mock mode).
+ * @throws {TypeError} If the destination or content type is invalid.
+ */
 export async function writeFileAsync(
 	destination: BunFile | PathLike | S3File,
 	content: Array<BlobPart> | ArrayBufferLike | Blob | BunFile | NodeJS.TypedArray | Response | string,
@@ -611,8 +704,8 @@ export async function writeFileAsync(
 /**
  * Returns the file extension (including the leading dot) of a given path.
  *
- * Accepts any value supported by {@link PathLike}, including strings, URLs, and
- * buffers.
+ * Accepts any value supported by {@linkcode PathLike}, including strings, URLs,
+ * and buffers.
  *
  * @example GetExtension("foo/bar.txt"); // ".txt" getExtension("foo/bar"); //
  * ""
@@ -628,8 +721,8 @@ export function getExtension(pathLike: PathLike): string {
 /**
  * Returns the path string without its file extension.
  *
- * Accepts any value supported by {@link PathLike}, including strings, URLs, and
- * buffers.
+ * Accepts any value supported by {@linkcode PathLike}, including strings, URLs,
+ * and buffers.
  *
  * @example GetPathWithoutExtension("foo/bar.txt"); // "foo/bar"
  * getPathWithoutExtension("foo/bar"); // "foo/bar"
@@ -662,9 +755,10 @@ function isErrorWithCode(value: unknown): value is ErrorWithCode {
  * @example Await validatePathExistsAsync("foo/bar.txt", FileType.File); await
  * validatePathExistsAsync("foo/", FileType.Directory, true);
  *
- * @param pathLike - The path to validate. Accepts any {@link PathLike} value.
- * @param fileType - The expected type: {@link FileType.Directory} or
- *   {@link FileType.File}.
+ * @param pathLike - The path to validate. Accepts any {@linkcode PathLike}
+ *   value.
+ * @param fileType - The expected type: {@linkcode FileType.Directory} or
+ *   {@linkcode FileType.File}.
  * @param shouldExit - If true, logs the error and exits the process on failure.
  *   Defaults to false.
  * @throws {TypeError} If the path does not exist or does not match the expected
@@ -746,8 +840,8 @@ function classify(stats: Stats, path: string): FileType {
  * @example Const type = await getFileTypeAsync("foo/bar.txt"); // FileType.File
  * or FileType.Directory
  *
- * @param pathLike - The path to check. Accepts any {@link PathLike} value.
- * @returns A promise that resolves to the {@link FileType} of the entry.
+ * @param pathLike - The path to check. Accepts any {@linkcode PathLike} value.
+ * @returns A promise that resolves to the {@linkcode FileType} of the entry.
  * @throws {TypeError} If the entry is neither a file nor a directory, or does
  *   not exist.
  */
@@ -764,6 +858,19 @@ export async function getFileTypeAsync(pathLike: PathLike): Promise<FileType> {
 	return classify(stats, path);
 }
 
+/**
+ * Checks asynchronously whether a given path exists in the file system.
+ *
+ * @example
+ *
+ * ```typescript
+ * const exists = await doesPathExistAsync("foo.txt");
+ * ```
+ *
+ * @param pathLike - The path to check.
+ * @returns `true` if the path exists, `false` if not.
+ * @throws {Error} If an unexpected error occurs (other than ENOENT).
+ */
 export async function doesPathExistAsync(pathLike: PathLike): Promise<boolean> {
 	try {
 		await stat(fromPathLike(pathLike));

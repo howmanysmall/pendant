@@ -29,21 +29,67 @@ type BaseRojoTreeEntry =
 			readonly $path: string;
 			readonly $properties?: Record<string, unknown>;
 	  };
+/**
+ * Represents a node in a Rojo project tree, corresponding to a Roblox instance.
+ *
+ * @remarks
+ * Each entry may represent a service, folder, or other instance, and may
+ * contain nested children.
+ */
 export type RojoTreeEntry = BaseRojoTreeEntry & { readonly [key: string]: RojoTreeEntry };
 
+/**
+ * Represents a parsed Rojo project file, including its tree and metadata.
+ *
+ * @property name - The name of the Rojo project, typically used to identify the
+ *   project in logs or UIs.
+ * @property tree - The root of the project tree.
+ * @property gameId - (Optional) Roblox game ID.
+ * @property placeId - (Optional) Roblox place ID.
+ * @property serveAddress - (Optional) Address for serving.
+ * @property servePort - (Optional) Port for serving.
+ * @property servePlaceIds - (Optional) Place IDs for serving.
+ * @property globIgnorePaths - (Optional) Paths to ignore.
+ */
 export interface RojoProject {
+	/** The Roblox game ID, if present. */
 	readonly gameId?: number;
+	/** Paths to ignore, if present. */
 	readonly globIgnorePaths?: ReadonlyArray<string>;
+	/**
+	 * The name of the Rojo project, typically used to identify the project in
+	 * logs or UIs.
+	 */
 	readonly name: string;
+	/** The Roblox place ID, if present. */
 	readonly placeId?: number;
+	/** The address to serve from, if present. */
 	readonly serveAddress?: string;
+	/** The place IDs to serve, if present. */
 	readonly servePlaceIds?: ReadonlyArray<number>;
+	/** The port to serve from, if present. */
 	readonly servePort?: number;
+	/** The root of the project tree. */
 	readonly tree: RojoTreeEntry;
 }
 
 const PROJECT_JSON_GLOB = new Bun.Glob("*.project.json");
 
+/**
+ * Loads and parses a Rojo project file from disk.
+ *
+ * @example
+ *
+ * ```typescript
+ * const project = await getProjectFromFileAsync("game.project.json");
+ * ```
+ *
+ * @param pathLike - The path to the Rojo project file (defaults to
+ *   "default.project.json").
+ * @returns The parsed {@linkcode RojoProject} object.
+ * @throws {TypeError} If the file does not match the expected pattern.
+ * @throws {Error} If the file does not exist or cannot be read.
+ */
 export async function getProjectFromFileAsync(pathLike: Bun.PathLike = "default.project.json"): Promise<RojoProject> {
 	const path = fromPathLike(pathLike);
 	const fileName = basename(path);
@@ -83,9 +129,29 @@ function getRuntimeContextFromKey(key: string): RuntimeContext | undefined {
 	return undefined;
 }
 
+/**
+ * Maps each runtime context to an array of Rojo tree entries.
+ *
+ * @see RuntimeContext
+ * @see RojoTreeEntry
+ */
 export type RuntimeEntryMap = Record<RuntimeContext, Array<RojoTreeEntry>>;
+
+/**
+ * Maps each runtime context to an array of file paths.
+ *
+ * @see RuntimeContext
+ */
 export type RuntimePathMap = Record<RuntimeContext, Array<string>>;
 
+/**
+ * Classifies Rojo tree entries into runtime contexts based on configuration and
+ * fallback rules.
+ *
+ * @param project - The parsed Rojo project.
+ * @param configuration - The Pendant configuration object.
+ * @returns A map from runtime context to arrays of tree entries.
+ */
 export function collectIntoRuntimeMap({ tree }: RojoProject, configuration: PendantConfiguration): RuntimeEntryMap {
 	const runtimeMap: RuntimeEntryMap = {
 		[RuntimeContext.Client]: [],
@@ -136,6 +202,14 @@ export function collectIntoRuntimeMap({ tree }: RojoProject, configuration: Pend
 	return runtimeMap;
 }
 
+/**
+ * Loads a Rojo project and classifies its entries by runtime context using the
+ * given configuration.
+ *
+ * @param configuration - The Pendant configuration object.
+ * @param projectFile - (Optional) Path to the Rojo project file.
+ * @returns A tuple: [runtimeEntryMap, rojoProject].
+ */
 export async function collectFromConfigurationAsync(
 	configuration: PendantConfiguration,
 	projectFile?: string,
@@ -202,6 +276,12 @@ function extractPathsFromEntry(entry: RojoTreeEntry): ReadonlyArray<string> {
 	return paths;
 }
 
+/**
+ * Extracts all file paths from a runtime entry map, grouped by runtime context.
+ *
+ * @param runtimeMap - The map from runtime context to tree entries.
+ * @returns A map from runtime context to arrays of file paths.
+ */
 export function collectPathsFromRuntimeMap(runtimeMap: RuntimeEntryMap): RuntimePathMap {
 	const paths: Record<RuntimeContext, Array<string>> = {
 		[RuntimeContext.Client]: [],

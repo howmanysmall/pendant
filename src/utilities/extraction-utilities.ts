@@ -1,5 +1,7 @@
 import { createZipReader } from "@holmlibs/unzip";
 
+import generateSchemaAsync from "functions/generate-schema-async";
+import logger from "logging/logger";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { rimraf } from "rimraf";
@@ -7,6 +9,22 @@ import { rimraf } from "rimraf";
 import { fromPathLike } from "./file-system-utilities";
 
 const CWD = process.cwd();
+
+async function updateSchemasAsync(foldersToRemove: ReadonlyArray<string>): Promise<void> {
+	try {
+		await Promise.all(
+			foldersToRemove.map(async (folderPath) =>
+				generateSchemaAsync(
+					"draft-7",
+					join(folderPath, ".schemas", "pendant-configuration.schema.json"),
+					false,
+				),
+			),
+		);
+	} catch (error: unknown) {
+		logger.error(`Failed to update schemas: ${error instanceof Error ? error.message : String(error)}`);
+	}
+}
 
 /**
  * Extracts configuration files from a ZIP archive to a target directory.
@@ -52,6 +70,9 @@ export async function extractConfigurationFilesAsync(
 		const totalSlashes = name.split("/").length;
 		if (totalSlashes <= 2) foldersToRemove.push(join(extractTo, name));
 	}
+
+	await updateSchemasAsync(foldersToRemove);
+	// logger.info(Bun.inspect(foldersToRemove, { colors: true, compact: false, depth: 1 }));
 
 	return async function cleanupAsync(): Promise<void> {
 		for (const folderPath of foldersToRemove) await rimraf(folderPath, {});
