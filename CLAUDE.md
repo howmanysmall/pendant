@@ -217,18 +217,22 @@ Use JSDoc tags to provide structured information. The following tags are commonl
 - Enable `noUnnecessaryTypeAssertion` and `noUnusedTypeParameters` to catch redundant `as` casts and unused generic type parameters.
 - Do not EVER use null.
 - Leverage TS 4.9's `satisfies` operator when declaring object literals to validate against interfaces without widening literal types:
+
   ```ts
   const config = {
     host: "localhost",
     port: 8080,
   } satisfies ServerConfig;
   ```
+
 - Write userdefined typeguard functions with `asserts` signatures for runtime checks and compiletime narrowing:
+
   ```ts
   function assertFoo(x: unknown): asserts x is Foo {
     if (!isFoo(x)) throw new Error("Not a Foo");
   }
   ```
+
 - Use template literal types and conditional/mapped types to express complex string patterns and transforms in your public APIs.
 - Prefer `ReadonlyMap<K, V>` and `ReadonlySet<T>` (or `Readonly<Record<K, V>>`) for collections you don't intend to mutate.
 - Mark deprecated APIs with the `@deprecated` TSDoc tag to signal upcoming removals or replacements in editor tooltips and docs.
@@ -565,6 +569,7 @@ Keep in mind that I am unable to do this properly. You will be all on your own.
 - You MUST ALWAYS use the `key` property for components.
 
 # important-instruction-reminders
+
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
@@ -605,6 +610,10 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 - If working with a new library or tool, consider looking for its documentation from its website, GitHub project, or the relevant llms.txt.
   - It is always better to have accurate, up-to-date documentation at your disposal, rather than relying on your pre-trained knowledge.
 - You can search the following directories for llms.txt collections for many projects:
-  - https://llmstxt.site/
-  - https://directory.llmstxt.cloud/
+  - <https://llmstxt.site/>
+  - <https://directory.llmstxt.cloud/>
 - If you find a relevant llms.txt file, follow the links until you have access to the complete documentation.
+
+## Memories
+
+- Stop using grep. Do not ever use it.

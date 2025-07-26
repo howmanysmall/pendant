@@ -1,10 +1,13 @@
 #!/usr/bin/env bun
+/* eslint-disable camelcase -- sybau */
 /* eslint-disable max-lines -- sybau */
 /* eslint-disable max-lines-per-function -- sybau */
 
 import { $ } from "bun";
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+
+const APPLICATION_JSON = "application/json";
 
 /** Configuration options for the changelog generator. */
 interface ChangelogConfig {
@@ -522,7 +525,7 @@ function createAnthropicProvider(): LlmProvider | undefined {
 					}),
 					headers: {
 						"anthropic-version": "2023-06-01",
-						"Content-Type": "application/json",
+						"Content-Type": APPLICATION_JSON,
 						"x-api-key": apiKey,
 					},
 					method: "POST",
@@ -569,7 +572,7 @@ function createOpenAiProvider(): LlmProvider | undefined {
 					}),
 					headers: {
 						Authorization: `Bearer ${apiKey}`,
-						"Content-Type": "application/json",
+						"Content-Type": APPLICATION_JSON,
 					},
 					method: "POST",
 				});
@@ -615,7 +618,7 @@ function createOpenRouterProvider(): LlmProvider | undefined {
 					}),
 					headers: {
 						Authorization: `Bearer ${apiKey}`,
-						"Content-Type": "application/json",
+						"Content-Type": APPLICATION_JSON,
 						"HTTP-Referer": "https://github.com/howmanysmall/pendant",
 						"X-Title": "Pendant Changelog Generator",
 					},

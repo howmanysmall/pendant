@@ -1,9 +1,9 @@
 import chalk from "chalk";
 import { createNamespaceLogger } from "logging/logger-utilities";
+import { parseGitignoreAsync } from "utilities/gitignore-utilities";
 import { addQuoted, removeQuotes } from "utilities/string-utilities";
 
 const logger = createNamespaceLogger("luau-lsp-runner");
-
 
 /** Options for configuring the Luau LSP analysis. */
 export interface LuauLspAnalysisOptions {
@@ -11,7 +11,10 @@ export interface LuauLspAnalysisOptions {
 	readonly baseConfigPath?: string;
 	/** Optional path to the definitions file (e.g., globalTypes.d.luau). */
 	readonly definitionsPath?: string;
-	/** Optional list of glob patterns to ignore during analysis. */
+	/**
+	 * Optional list of glob patterns to ignore during analysis. If not
+	 * provided, .gitignore patterns will be used as defaults.
+	 */
 	readonly ignorePatterns?: ReadonlyArray<string>;
 	/** The paths to analyze. */
 	readonly paths: ReadonlyArray<string>;
@@ -118,7 +121,9 @@ export class LuauLspRunner {
 		const baseConfigPath = options.baseConfigPath ?? ".luaurc";
 		if (await Bun.file(`${this.cwd}/${baseConfigPath}`).exists()) command.push(`--base-luaurc=${baseConfigPath}`);
 
-		const patterns = options.ignorePatterns ?? [];
+		// Combine gitignore patterns with custom ignore patterns
+		const gitignorePatterns = await parseGitignoreAsync(`${this.cwd}/.gitignore`);
+		const patterns = [...gitignorePatterns, ...(options.ignorePatterns ?? [])];
 
 		const results = await Promise.all(
 			patterns.map(async (pattern) => {

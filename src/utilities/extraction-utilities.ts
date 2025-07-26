@@ -72,7 +72,6 @@ export async function extractConfigurationFilesAsync(
 	}
 
 	await updateSchemasAsync(foldersToRemove);
-	// logger.info(Bun.inspect(foldersToRemove, { colors: true, compact: false, depth: 1 }));
 
 	return async function cleanupAsync(): Promise<void> {
 		for (const folderPath of foldersToRemove) await rimraf(folderPath, {});
