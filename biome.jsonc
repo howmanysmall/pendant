@@ -260,6 +260,16 @@
 					"allowTrailingCommas": false
 				}
 			}
+		},
+		{
+			"includes": ["test/**/*.ts"],
+			"linter": {
+				"rules": {
+					"performance": {
+						"useTopLevelRegex": "off"
+					}
+				}
+			}
 		}
 	],
 

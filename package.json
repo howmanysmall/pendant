@@ -19,6 +19,7 @@
 		"@mitata/counters": "^0.0.8",
 		"@types/bun": "latest",
 		"bunli": "latest",
+		"cli-table3": "^0.6.5",
 		"concurrently": "^9.1.2",
 		"eslint": "^9.25.1",
 		"eslint-config-biome": "^1.9.4",
@@ -31,6 +32,7 @@
 	},
 	"dependencies": {
 		"@bunli/core": "latest",
+		"@holmlibs/unzip": "^1.0.0",
 		"@octokit/rest": "^22.0.0",
 		"chalk": "^5.4.1",
 		"chokidar": "^4.0.3",

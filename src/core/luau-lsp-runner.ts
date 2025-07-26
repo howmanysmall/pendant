@@ -41,6 +41,10 @@ export interface LuauLspResult {
 	readonly success: boolean;
 }
 
+export interface PrivateLuauLspRunner {
+	buildCommand(options: LuauLspAnalysisOptions): ReadonlyArray<string>;
+}
+
 /** Core runner for luau-lsp analyze command. */
 export class LuauLspRunner {
 	/**

@@ -29,7 +29,7 @@ Default to using Bun instead of Node.js.
 
 Use `bun test` to run tests.
 
-```ts#index.test.ts
+```ts
 import { test, expect } from "bun:test";
 
 test("hello world", () => {
@@ -43,7 +43,7 @@ Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully suppor
 
 Server:
 
-```ts#index.ts
+```ts
 import index from "./index.html"
 
 Bun.serve({
@@ -76,7 +76,7 @@ Bun.serve({
 
 HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
 
-```html#index.html
+```html
 <html>
   <body>
     <h1>Hello, world!</h1>
@@ -87,7 +87,7 @@ HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will tr
 
 With the following `frontend.tsx`:
 
-```tsx#frontend.tsx
+```tsx
 import React from "react";
 
 // import .css files directly and it works
@@ -164,7 +164,7 @@ Use JSDoc tags to provide structured information. The following tags are commonl
 
 - `@param`: Describe a function, method, or hook parameter. Include the parameter's type and a clear description of its purpose.
 - `@returns`: Describe the return value of a function, method, or hook.
-- `@example`: Provide one or more code snippets demonstrating how to use the element. Wrap the code in a Markdown code block with the language specified (e.g., ` ```typescript `).
+- `@example`: Provide one or more code snippets demonstrating how to use the element. Wrap the code in a Markdown code block with the language specified (e.g., ` ```ts `).
 - `@remarks`: Add supplementary notes, implementation details, or warnings that don't fit in the main description.
 - `@see`: Link to related parts of the codebase or external documentation.
 - `@template`: For generic functions, classes, or types, describe the generic type parameters.
@@ -257,7 +257,7 @@ Use JSDoc tags to provide structured information. The following tags are commonl
 
 **Example:**
 
-```typescript
+```ts
 /**
  * Calculates the sum of two numbers.
  *
@@ -266,7 +266,7 @@ Use JSDoc tags to provide structured information. The following tags are commonl
  * @returns The sum of `a` and `b`.
  */
 export function add(a: number, b: number): number {
-    return a + b;
+  return a + b;
 }
 ```
 
@@ -278,7 +278,7 @@ export function add(a: number, b: number): number {
 
 **Example:**
 
-```typescript
+```ts
 /**
  * Manages user authentication and session lifecycle.
  *
@@ -286,26 +286,26 @@ export function add(a: number, b: number): number {
  * and user credential management with secure session state.
  */
 export class AuthenticationManager {
-    /**
-     * Creates a new authentication manager instance.
-     *
-     * @param config - Configuration options for authentication behavior.
-     */
-    public constructor(private readonly config: AuthConfig) {
-        // implementation
-    }
+  /**
+   * Creates a new authentication manager instance.
+   *
+   * @param config - Configuration options for authentication behavior.
+   */
+  public constructor(private readonly config: AuthConfig) {
+    // implementation
+  }
 
-    /**
-     * Authenticates a user with email and password.
-     *
-     * @param email - The user's email address.
-     * @param password - The user's password.
-     * @returns A promise resolving to the authentication result.
-     * @throws {AuthenticationError} When credentials are invalid.
-     */
-    public async loginAsync(email: string, password: string): Promise<AuthResult> {
-        // implementation
-    }
+  /**
+   * Authenticates a user with email and password.
+   *
+   * @param email - The user's email address.
+   * @param password - The user's password.
+   * @returns A promise resolving to the authentication result.
+   * @throws {AuthenticationError} When credentials are invalid.
+   */
+  public async loginAsync(email: string, password: string): Promise<AuthResult> {
+    // implementation
+  }
 }
 ```
 
@@ -316,25 +316,25 @@ export class AuthenticationManager {
 
 **Example:**
 
-```typescript
+```ts
 /** Represents a user in the system. */
 export interface User {
-    /** The unique identifier for the user. */
-    readonly id: string;
-    /** The user's full name. */
-    readonly name: string;
-    /** The user's primary email address. */
-    readonly email: string;
+  /** The unique identifier for the user. */
+  readonly id: string;
+  /** The user's full name. */
+  readonly name: string;
+  /** The user's primary email address. */
+  readonly email: string;
 }
 
 /**
  * Configuration options for user validation.
  */
 export type ValidationConfig = {
-    /** Minimum required password length. */
-    readonly minPasswordLength: number;
-    /** Whether to require special characters in passwords. */
-    readonly requireSpecialChars: boolean;
+  /** Minimum required password length. */
+  readonly minPasswordLength: number;
+  /** Whether to require special characters in passwords. */
+  readonly requireSpecialChars: boolean;
 };
 ```
 
@@ -345,7 +345,7 @@ export type ValidationConfig = {
 
 **Example:**
 
-```typescript
+```ts
 /** Defines the set of supported authentication methods. */
 export enum AuthenticationMethod {
     /** Standard email and password authentication. */
@@ -368,7 +368,7 @@ export const MAX_LOGIN_ATTEMPTS = 5;
 
 **Example:**
 
-```typescript
+```ts
 /**
  * A hook to manage a boolean toggle state.
  *
@@ -393,7 +393,7 @@ export function useToggle(initialState: boolean): {
 
 **Example:**
 
-```typescript
+```ts
 import type { ReactNode } from "react";
 
 /**
@@ -434,7 +434,7 @@ export default function Button(properties: ButtonProperties): ReactNode {
 
 **Example:**
 
-```typescript
+```ts
 import { z } from "zod";
 
 /**
@@ -459,7 +459,7 @@ export type UserProfile = z.infer<typeof UserProfileSchema>;
 
 **Example:**
 
-```typescript
+```ts
 import { Command, Option } from "clipanion";
 
 /**

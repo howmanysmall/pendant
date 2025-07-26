@@ -1,5 +1,7 @@
+import logger from "logging/logger";
 import type ConfigurationFileType from "meta/configuration-file-type";
 import ConfigurationFileTypeMeta, { type Metadata } from "meta/configuration-file-type-meta";
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { ContentType, fromPathLike, readFileAsync } from "utilities/file-system-utilities";
 import { z } from "zod/mini";
@@ -96,26 +98,6 @@ export async function getPendantConfigurationAsync(
 	return configuration;
 }
 
-async function doesFileExistAsync(bunFile: Bun.BunFile): Promise<boolean> {
-	try {
-		return await bunFile.exists();
-	} catch {
-		return false;
-	}
-}
-
-const FILE_NAMES = [
-	".pendant",
-	"pendant",
-	".pendant-config",
-	"pendant-config",
-	".pendant-configuration",
-	"pendant-configuration",
-	".pendant.config",
-	"pendant.config",
-	".pendant.configuration",
-	"pendant.configuration",
-];
 const FILE_EXTENSIONS = new Array<string>();
 {
 	let length = 0;
@@ -150,31 +132,112 @@ function resolveConfigurationFileType(extension: string): ConfigurationFileType 
 
 for (const fileExtension of FILE_EXTENSIONS) resolveConfigurationFileType(fileExtension);
 
+const PRIORITY_NAMES = [".pendant", "pendant"];
+const PRIORITY_EXTENSIONS = ["json", "yaml", "yml", "toml"];
+
+const ALL_EXTENSIONS = new Set(
+	Object.values(ConfigurationFileTypeMeta)
+		.flatMap((metadata): ReadonlyArray<string> => [...metadata.fileExtensions])
+		.map((extension) => extension.replace(PREFIX_DOT_REGEX, ""))
+		.filter(Boolean),
+);
+const ALL_NAMES = new Set([
+	".pendant-config",
+	".pendant-configuration",
+	".pendant.config",
+	".pendant.configuration",
+	"pendant-config",
+	"pendant-configuration",
+	"pendant.config",
+	"pendant.configuration",
+	...PRIORITY_NAMES,
+]);
+
+const parserByExtension = new Map<string, (text: string) => unknown>();
+for (const [, { fileExtensions, parse }] of ALL_ENTRIES)
+	for (const fileExtension of fileExtensions)
+		parserByExtension.set(fileExtension.replace(PREFIX_DOT_REGEX, ""), parse);
+
+function splitNameExtension(fileName: string): readonly [fileName: string, extension: string] {
+	const index = fileName.lastIndexOf(".");
+	return index === -1 ? [fileName, ""] : [fileName.slice(0, index), fileName.slice(index + 1)];
+}
+
+function rank(fileName: string): number {
+	const [name, extension] = splitNameExtension(fileName);
+	let score = 0;
+
+	const nameIndex = PRIORITY_NAMES.indexOf(name);
+	if (nameIndex !== -1) score += (10 - nameIndex) * 1000;
+
+	const extensionIndex = PRIORITY_EXTENSIONS.indexOf(extension);
+	if (extensionIndex !== -1) score += 10 - extensionIndex;
+
+	return -score;
+}
+
+function isCandidateName(fileName: string): boolean {
+	const [name, extension] = splitNameExtension(fileName);
+	return ALL_NAMES.has(name) && ALL_EXTENSIONS.has(extension);
+}
+function sortCandidates(a: string, b: string): number {
+	return rank(a) - rank(b);
+}
+
+/**
+ * Searches for and reads the first valid pendant configuration file from a
+ * directory by checking paths in parallel.
+ *
+ * This function searches for configuration files in a specific priority order,
+ * checking for various names (e.g., `.pendant`, `pendant-config`) and
+ * extensions (e.g., `json`, `yaml`, `toml`). It returns the first file that it
+ * finds, successfully parses, and validates against the configuration schema.
+ * It optimizes the search by attempting to read all possible file paths
+ * concurrently.
+ *
+ * @param searchDirectoryPathLike - The directory to search in. Defaults to the
+ *   current working directory.
+ * @returns A promise that resolves to the parsed pendant configuration.
+ * @throws {Error} If no valid configuration file is found in the specified
+ *   directory.
+ */
 export async function getFirstConfigurationAsync(
 	searchDirectoryPathLike: Bun.PathLike = process.cwd(),
 ): Promise<PendantConfiguration> {
 	const searchDirectory = fromPathLike(searchDirectoryPathLike);
-	for (const fileName of FILE_NAMES) {
-		for (const fileExtension of FILE_EXTENSIONS) {
-			const fullPath = join(searchDirectory, `${fileName}.${fileExtension}`);
-			const file = Bun.file(fullPath);
 
-			if (await doesFileExistAsync(file)) {
-				const configurationFileType = resolveConfigurationFileType(fileExtension);
-				const { parse } = ConfigurationFileTypeMeta[configurationFileType];
+	let paths: ReadonlyArray<string>;
+	try {
+		paths = await readdir(searchDirectory);
+	} catch (error) {
+		throw new Error(`Directory not accessible: ${searchDirectory}. Error: ${(error as Error).message}`);
+	}
 
-				const content = await file.text();
-				const parsed = parse(content);
+	const candidates = paths.filter(isCandidateName).sort(sortCandidates);
+	const promises = candidates.map(async (fileName) => {
+		const extension = splitNameExtension(fileName)[1];
+		const parse = parserByExtension.get(extension);
+		if (!parse) return;
 
-				const result = await isPendantConfiguration.safeParseAsync(parsed);
-				if (!result.success) continue;
-
+		const fullPath = join(searchDirectory, fileName);
+		try {
+			const text = await Bun.file(fullPath).text();
+			const parsed = parse(text);
+			const result = isPendantConfiguration.safeParse(parsed);
+			if (result.success) {
 				const configuration = result.data;
 				if ("$schema" in configuration) delete configuration.$schema;
 				return configuration;
 			}
+		} catch (error) {
+			logger.warn(
+				`Failed to read or parse file: ${fullPath}. Error: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
-	}
+	});
 
-	throw new Error(`No pendant configuration file found in "${searchDirectory}".`);
+	const results = await Promise.all(promises);
+	for (const result of results) if (result !== undefined) return result;
+
+	throw new Error("No pendant configuration file found");
 }

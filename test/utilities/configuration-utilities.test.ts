@@ -1,15 +1,253 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rimraf } from "rimraf";
 import {
+	getFirstConfigurationAsync,
 	getPendantConfigurationAsync,
 	isPendantConfiguration,
 	type PendantConfiguration,
 } from "utilities/configuration-utilities";
+import { extractConfigurationFilesAsync } from "utilities/extraction-utilities";
 
 const DEFAULT = "default.project.json";
+const DOT_PENDANT_JSON = ".pendant.json";
+const PENDANT_JSON = "pendant.json";
+
+// Test configuration file contents
+const EXPECTED_CLIENT_FILES = ["src/client/**", "src/UIFusion/**"];
+const EXPECTED_SERVER_FILES = ["src/server/**"];
+const EXPECTED_SHARED_FILES = ["src/shared/**"];
+const EXPECTED_TESTING_FILES = ["src/testing/**"];
+const EXPECTED_PROBLEMATIC_FILES = ["src/legacy/**", "src/deprecated/**"];
+const CORRECTLY_NAMED_DOT_PENDANT = "correctly-named-dot-pendant";
+const INVALID_JSON = "{ invalid json }";
+
+function getFirstTest(
+	getTemporaryDirectory: () => string,
+	callback: typeof getFirstConfigurationAsync,
+	name?: string,
+): void {
+	describe(name ? `getFirstConfigurationAsync (${name})` : "getFirstConfigurationAsync", () => {
+		let cleanupAsync: (() => Promise<void>) | undefined;
+
+		afterEach(async () => {
+			if (!cleanupAsync) return;
+			await cleanupAsync();
+			cleanupAsync = undefined;
+		});
+
+		it("should find and parse a valid .pendant.json configuration", async () => {
+			cleanupAsync = await extractConfigurationFilesAsync(undefined, getTemporaryDirectory());
+
+			const result = await callback(join(getTemporaryDirectory(), CORRECTLY_NAMED_DOT_PENDANT));
+
+			expect(result.files.client).toEqual(EXPECTED_CLIENT_FILES);
+			expect(result.files.server).toEqual(EXPECTED_SERVER_FILES);
+			expect(result.files.shared).toEqual(EXPECTED_SHARED_FILES);
+			expect(result.files.testing).toEqual(EXPECTED_TESTING_FILES);
+			expect(result.knownProblematicFiles).toEqual(EXPECTED_PROBLEMATIC_FILES);
+			expect(result.outputFileName).toBe("problematic");
+			expect(result.projectFile).toBe(DEFAULT);
+		});
+
+		it("should find pendant.json when .pendant.json doesn't exist", async () => {
+			cleanupAsync = await extractConfigurationFilesAsync(undefined, getTemporaryDirectory());
+
+			const result = await callback(join(getTemporaryDirectory(), "correctly-named-pendant"));
+
+			expect(result.files.client).toEqual(EXPECTED_CLIENT_FILES);
+			expect(result.files.server).toEqual(EXPECTED_SERVER_FILES);
+			expect(result.files.shared).toEqual(EXPECTED_SHARED_FILES);
+			expect(result.files.testing).toEqual(EXPECTED_TESTING_FILES);
+		});
+
+		it("should prioritize .pendant.json over pendant.json", async () => {
+			cleanupAsync = await extractConfigurationFilesAsync(undefined, getTemporaryDirectory());
+
+			// Create a test directory with both files
+			const testDirectory = join(getTemporaryDirectory(), "priority-test");
+			await mkdir(testDirectory, { recursive: true });
+			const pendantConfigPath = join(testDirectory, DOT_PENDANT_JSON);
+			const regularConfigPath = join(testDirectory, PENDANT_JSON);
+
+			const priorityConfig = {
+				files: {
+					client: ["Priority"],
+					server: [],
+					shared: [],
+				},
+			};
+
+			const regularConfig = {
+				files: {
+					client: ["Regular"],
+					server: [],
+					shared: [],
+				},
+			};
+
+			await writeFile(pendantConfigPath, JSON.stringify(priorityConfig, null, 2));
+			await writeFile(regularConfigPath, JSON.stringify(regularConfig, null, 2));
+
+			const result = await callback(testDirectory);
+
+			expect(result.files.client).toEqual(["Priority"]);
+		});
+
+		it("should skip incorrectly named configuration files", async () => {
+			cleanupAsync = await extractConfigurationFilesAsync(undefined, getTemporaryDirectory());
+
+			// The incorrectly-named directory has pendant-cli.json which should not be found
+			// since pendant-cli is not in the FILE_NAMES array
+			expect(callback(join(getTemporaryDirectory(), "incorrectly-named"))).rejects.toThrow(
+				"No pendant configuration file found",
+			);
+		});
+
+		it("should remove $schema property from result", async () => {
+			cleanupAsync = await extractConfigurationFilesAsync(undefined, getTemporaryDirectory());
+
+			const result = await callback(join(getTemporaryDirectory(), CORRECTLY_NAMED_DOT_PENDANT));
+
+			expect("$schema" in result).toBe(false);
+		});
+
+		it("should skip invalid configuration files and find valid ones", async () => {
+			cleanupAsync = await extractConfigurationFilesAsync(undefined, getTemporaryDirectory());
+
+			const testDirectory = join(getTemporaryDirectory(), "mixed-validity");
+			await mkdir(testDirectory, { recursive: true });
+			const invalidConfigPath = join(testDirectory, DOT_PENDANT_JSON);
+			const validConfigPath = join(testDirectory, PENDANT_JSON);
+
+			const invalidConfig = {
+				files: {
+					// Missing required properties
+				},
+			};
+
+			const validConfig = {
+				files: {
+					client: ["Valid"],
+					server: [],
+					shared: [],
+				},
+			};
+
+			await writeFile(invalidConfigPath, JSON.stringify(invalidConfig, null, 2));
+			await writeFile(validConfigPath, JSON.stringify(validConfig, null, 2));
+
+			const result = await callback(testDirectory);
+
+			expect(result.files.client).toEqual(["Valid"]);
+		});
+
+		it("should skip files with invalid JSON and find valid ones", async () => {
+			cleanupAsync = await extractConfigurationFilesAsync(undefined, getTemporaryDirectory());
+
+			const testDirectory = join(getTemporaryDirectory(), "mixed-json");
+			await mkdir(testDirectory, { recursive: true });
+			const invalidJsonPath = join(testDirectory, DOT_PENDANT_JSON);
+			const validConfigPath = join(testDirectory, PENDANT_JSON);
+
+			const validConfig = {
+				files: {
+					client: ["Valid"],
+					server: [],
+					shared: [],
+				},
+			};
+
+			await writeFile(invalidJsonPath, INVALID_JSON);
+			await writeFile(validConfigPath, JSON.stringify(validConfig, null, 2));
+
+			const result = await callback(testDirectory);
+
+			expect(result.files.client).toEqual(["Valid"]);
+		});
+
+		it("should throw error when no valid configuration file is found", async () => {
+			cleanupAsync = await extractConfigurationFilesAsync(undefined, getTemporaryDirectory());
+
+			expect(callback(join(getTemporaryDirectory(), "no-configuration"))).rejects.toThrow(
+				"No pendant configuration file found",
+			);
+		});
+
+		it("should throw error when directory doesn't exist", () => {
+			const nonExistentDirectory = join(getTemporaryDirectory(), "nonexistent");
+
+			expect(callback(nonExistentDirectory)).rejects.toThrow();
+		});
+
+		it("should handle configuration with all optional fields", async () => {
+			cleanupAsync = await extractConfigurationFilesAsync(undefined, getTemporaryDirectory());
+
+			const result = await callback(join(getTemporaryDirectory(), CORRECTLY_NAMED_DOT_PENDANT));
+
+			expect(result.files.testing).toEqual(EXPECTED_TESTING_FILES);
+			expect(result.knownProblematicFiles).toEqual(EXPECTED_PROBLEMATIC_FILES);
+			expect(result.outputFileName).toBe("problematic");
+			expect(result.projectFile).toBe(DEFAULT);
+		});
+
+		it("should work with current working directory when no path provided", async () => {
+			const originalCwd = process.cwd();
+
+			try {
+				// Extract to a subdirectory of our temp directory
+				const testConfigDirectory = join(getTemporaryDirectory(), "cwd-test");
+				cleanupAsync = await extractConfigurationFilesAsync(undefined, testConfigDirectory);
+
+				// Change to the correctly-named-dot-pendant directory
+				const configDirectory = join(testConfigDirectory, CORRECTLY_NAMED_DOT_PENDANT);
+				process.chdir(configDirectory);
+
+				const result = await callback();
+
+				expect(result.files.client).toEqual(EXPECTED_CLIENT_FILES);
+				expect(result.files.server).toEqual(EXPECTED_SERVER_FILES);
+				expect(result.files.shared).toEqual(EXPECTED_SHARED_FILES);
+			} finally {
+				process.chdir(originalCwd);
+			}
+		});
+
+		it("should test file priority order correctly", async () => {
+			cleanupAsync = await extractConfigurationFilesAsync(undefined, getTemporaryDirectory());
+
+			const testDirectory = join(getTemporaryDirectory(), "priority-order");
+			await mkdir(testDirectory, { recursive: true });
+
+			// Create files in reverse priority order with different content
+			const configs = [
+				{ client: ["Configuration"], file: "pendant.configuration.json" },
+				{ client: ["Config"], file: "pendant.config.json" },
+				{ client: ["DashConfig"], file: "pendant-config.json" },
+				{ client: ["Pendant"], file: PENDANT_JSON },
+				{ client: ["DotPendant"], file: DOT_PENDANT_JSON },
+			];
+
+			for (const { client, file } of configs) {
+				const configData = {
+					files: {
+						client,
+						server: [],
+						shared: [],
+					},
+				};
+				await writeFile(join(testDirectory, file), JSON.stringify(configData, null, 2));
+			}
+
+			const result = await callback(testDirectory);
+
+			// Should find .pendant.json first due to priority order
+			expect(result.files.client).toEqual(["DotPendant"]);
+		});
+	});
+}
 
 describe("configuration-utilities", () => {
 	let temporaryDirectory: string;
@@ -214,7 +452,7 @@ describe("configuration-utilities", () => {
 
 		it("should throw error if file contains invalid JSON", async () => {
 			const configurationPath = join(temporaryDirectory, "invalid.pendant.json");
-			await writeFile(configurationPath, "{ invalid json }");
+			await writeFile(configurationPath, INVALID_JSON);
 
 			expect(getPendantConfigurationAsync(configurationPath)).rejects.toThrow();
 		});
@@ -232,4 +470,6 @@ describe("configuration-utilities", () => {
 			expect(getPendantConfigurationAsync(configurationPath)).rejects.toThrow();
 		});
 	});
+
+	getFirstTest(() => temporaryDirectory, getFirstConfigurationAsync);
 });

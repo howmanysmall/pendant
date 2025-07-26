@@ -1,13 +1,21 @@
 import { defineCommand, option } from "@bunli/core";
 
 import generateSchemaAsync from "functions/generate-schema-async";
+import { createNamespaceLogger } from "logging/logger-utilities";
 import { z } from "zod/v4-mini";
 
-export const generateSchemaCommand = defineCommand({
-	name: "generate-schema",
-	description: "Creates a schema for the pendant configuration.",
+const logger = createNamespaceLogger("initialize");
+
+// what the initialize command does:
+// 1. Generate schema file
+// 2. Generate base configuration file
+
+export const initializeCommand = defineCommand({
+	name: "initialize",
+	description: "Initializes the pendant environment by generating necessary files.",
 	handler: async ({ flags }) => {
 		const { path, target, verbose } = flags;
+
 		await generateSchemaAsync(target, path, verbose);
 	},
 	options: {
@@ -29,4 +37,4 @@ export const generateSchemaCommand = defineCommand({
 	},
 });
 
-export default generateSchemaCommand;
+export default initializeCommand;
