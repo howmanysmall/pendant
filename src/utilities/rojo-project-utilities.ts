@@ -3,7 +3,7 @@ import type RobloxService from "meta/roblox-service";
 import RobloxServiceMeta from "meta/roblox-service-meta";
 import RuntimeContext from "meta/runtime-context";
 import RuntimeContextMeta from "meta/runtime-context-meta";
-import { basename, resolve } from "node:path";
+import { basename, matchesGlob, resolve } from "node:path";
 import { ContentType, fromPathLike, readFileAsync } from "utilities/file-system-utilities";
 
 import type { PendantConfiguration } from "./configuration-utilities";
@@ -171,18 +171,14 @@ export function collectIntoRuntimeMap({ tree }: RojoProject, configuration: Pend
 			continue;
 		}
 
-		for (const serviceName of serviceNames) {
+		for (const serviceName of serviceNames)
 			if (serviceName in tree) {
 				const entry = tree[serviceName];
 				if (!isRojoTreeEntry(entry, serviceName)) continue;
 				runtimeMap[runtimeContext].push(entry);
 				configuredServices.add(serviceName);
-				// Also track by className to prevent fallback classification
-				if (entry.$className) {
-					configuredServices.add(entry.$className);
-				}
+				if (entry.$className) configuredServices.add(entry.$className);
 			}
-		}
 	}
 
 	// Fallback classification
@@ -200,6 +196,121 @@ export function collectIntoRuntimeMap({ tree }: RojoProject, configuration: Pend
 	}
 
 	return runtimeMap;
+}
+
+const MATCH_DOT_REGEX = /\./g;
+const MATCH_STAR_STAR_REGEX = /\*\*/g;
+const MATCH_STAR_REGEX = /\*/g;
+const DOUBLE_STAR_REGEX = /__DOUBLE_STAR__/g;
+
+function compilePatterns(patterns: ReadonlyArray<string>): ReadonlyArray<RegExp> {
+	return patterns.map(
+		(pattern) =>
+			new RegExp(
+				`^${pattern
+					.replace(MATCH_DOT_REGEX, "\\.")
+					.replace(MATCH_STAR_STAR_REGEX, "__DOUBLE_STAR__")
+					.replace(MATCH_STAR_REGEX, "[^/]*")
+					.replace(DOUBLE_STAR_REGEX, ".*")}$`,
+			),
+	);
+}
+function pathMatchesPatternsRegExp(path: string, patterns: ReadonlyArray<string>): boolean {
+	if (patterns.length === 0) return false;
+	const regexps = compilePatterns(patterns);
+	for (const regex of regexps) if (regex.test(path)) return true;
+	return false;
+}
+
+/**
+ * Loads a Rojo project and classifies its entries by runtime context using the
+ * given configuration.
+ *
+ * @param configuration - The Pendant configuration object.
+ * @param projectFile - (Optional) Path to the Rojo project file.
+ * @returns A tuple: [runtimeEntryMap, rojoProject].
+ */
+// eslint-disable-next-line id-length -- sybau
+export async function collectFromConfigurationRegExpAsync(
+	configuration: PendantConfiguration,
+	projectFile?: string,
+): Promise<readonly [runtimeEntryMap: RuntimeEntryMap, rojoProject: RojoProject]> {
+	const rojoProject = await getProjectFromFileAsync(projectFile ?? configuration.projectFile);
+	const { tree } = rojoProject;
+
+	const runtimeMap: RuntimeEntryMap = {
+		[RuntimeContext.Client]: [],
+		[RuntimeContext.Server]: [],
+		[RuntimeContext.Shared]: [],
+		[RuntimeContext.Testing]: [],
+		[RuntimeContext.Unknown]: [],
+	};
+	const configuredServices = new Set<string>();
+	const entries = Object.entries(tree);
+
+	// Configuration-based classification using path patterns
+	for (const [key, value] of entries) {
+		if (!isRojoTreeEntry(value, key)) continue;
+
+		const className = value.$className;
+		const allPaths = extractPathsFromEntry(value);
+		let matchedContext: RuntimeContext | undefined;
+
+		// Check each path against configuration patterns
+		for (const path of allPaths) {
+			for (const [context, patterns] of Object.entries(configuration.files)) {
+				const runtimeContext = getRuntimeContextFromKey(context);
+				if (!runtimeContext) continue;
+
+				if (pathMatchesPatternsRegExp(path, patterns)) {
+					matchedContext = runtimeContext;
+					break;
+				}
+			}
+			if (matchedContext) break;
+		}
+
+		if (matchedContext) {
+			runtimeMap[matchedContext].push(value);
+			configuredServices.add(key);
+			if (className) configuredServices.add(className);
+		}
+	}
+
+	// Fallback classification for unconfigured services
+	for (const [key, value] of entries) {
+		if (!isRojoTreeEntry(value, key) || configuredServices.has(key)) continue;
+
+		const className = value.$className;
+		if (!className || !isRobloxService(className) || configuredServices.has(className)) {
+			if (className && !configuredServices.has(className)) runtimeMap[RuntimeContext.Unknown].push(value);
+			continue;
+		}
+
+		const { runtimeContext } = RobloxServiceMeta[className];
+		runtimeMap[runtimeContext].push(value);
+	}
+
+	return [runtimeMap, rojoProject];
+}
+
+// function newGlob(pattern: string): Bun.Glob {
+// 	return new Bun.Glob(pattern);
+// }
+// function compileGlobs(patterns: ReadonlyArray<string>): ReadonlyArray<Bun.Glob> {
+// 	return patterns.map(newGlob);
+// }
+// function pathMatchesPatternsGlob(path: string, patterns: ReadonlyArray<string>): boolean {
+// 	const globs = compileGlobs(patterns);
+// 	if (globs.length === 0) return false;
+// 	for (const glob of globs) if (glob.match(path)) return true;
+// 	return false;
+// }
+
+function pathMatchesPatternsGlob(path: string, patterns: ReadonlyArray<string>): boolean {
+	if (patterns.length === 0) return false;
+	for (const pattern of patterns) if (matchesGlob(path, pattern)) return true;
+	return false;
 }
 
 /**
@@ -225,29 +336,39 @@ export async function collectFromConfigurationAsync(
 		[RuntimeContext.Unknown]: [],
 	};
 	const configuredServices = new Set<string>();
+	const entries = Object.entries(tree);
 
-	// Configuration-based classification
-	for (const [context, serviceNames] of Object.entries(configuration.files)) {
-		const runtimeContext = getRuntimeContextFromKey(context);
+	// Configuration-based classification using path patterns
+	for (const [key, value] of entries) {
+		if (!isRojoTreeEntry(value, key)) continue;
 
-		if (!runtimeContext) {
-			logger.warn(`Unexpected context key: ${context}`);
-			continue;
+		const className = value.$className;
+		const allPaths = extractPathsFromEntry(value);
+		let matchedContext: RuntimeContext | undefined;
+
+		// Check each path against configuration patterns
+		for (const path of allPaths) {
+			for (const [context, patterns] of Object.entries(configuration.files)) {
+				const runtimeContext = getRuntimeContextFromKey(context);
+				if (!runtimeContext) continue;
+
+				if (pathMatchesPatternsGlob(path, patterns)) {
+					matchedContext = runtimeContext;
+					break;
+				}
+			}
+			if (matchedContext) break;
 		}
 
-		for (const serviceName of serviceNames) {
-			if (serviceName in tree) {
-				const entry = tree[serviceName];
-				if (!isRojoTreeEntry(entry, serviceName)) continue;
-				runtimeMap[runtimeContext].push(entry);
-				configuredServices.add(serviceName);
-				if (entry.$className) configuredServices.add(entry.$className);
-			}
+		if (matchedContext) {
+			runtimeMap[matchedContext].push(value);
+			configuredServices.add(key);
+			if (className) configuredServices.add(className);
 		}
 	}
 
-	// Fallback classification
-	for (const [key, value] of Object.entries(tree)) {
+	// Fallback classification for unconfigured services
+	for (const [key, value] of entries) {
 		if (!isRojoTreeEntry(value, key) || configuredServices.has(key)) continue;
 
 		const className = value.$className;
