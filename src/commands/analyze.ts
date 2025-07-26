@@ -47,7 +47,9 @@ export const analyzeCommand = defineCommand({
 
 			// Load Rojo project and collect paths
 			commandSpinner.start(colors.blue("Loading Rojo project configuration..."));
-			const [runtimeMap, rojoProject] = await collectFromConfigurationAsync(configuration, flags.rojoProject);
+
+			const [runtimeMap, rojoProject] = await collectFromConfigurationAsync(configuration, projectFile);
+
 			const paths = collectPathsFromRuntimeMap(runtimeMap);
 			commandSpinner.stop();
 

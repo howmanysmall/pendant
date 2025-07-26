@@ -1,3 +1,4 @@
 [tools]
+hyperfine = "sharkdp/hyperfine@1.19.0"
 luau-lsp = "JohnnyMorganz/luau-lsp@1.52.1"
 rojo = "rojo-rbx/rojo@7.5.1"
