@@ -5,41 +5,36 @@ node_modules
 out
 dist
 *.tgz
-
 # code coverage
 coverage
 *.lcov
-
 # logs
 logs
 _.log
 report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
-
 # dotenv environment variable files
 .env
 .env.development.local
 .env.test.local
 .env.production.local
 .env.local
-
 # caches
 .eslintcache
 .cache
 *.tsbuildinfo
-
 # IntelliJ based IDEs
 .idea
-
 # Finder (MacOS) folder config
 .DS_Store
-
 *.code-workspace
 # .pendant.json
-
 # GEMINI.md
 # CLAUDE.md
 # .gemini
 # .claude
-
 /configuration-files/
 /current-release/
+/problematic
+/sourcemap.json
+/globalTypes.d.luau
+/globalTypes.d.lua

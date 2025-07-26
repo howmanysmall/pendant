@@ -33,6 +33,7 @@ export const RobloxServiceMeta: Readonly<Record<RobloxService, RobloxServiceMeta
 	[RobloxService.StarterGui]: { runtimeContext: RuntimeContext.Client },
 	[RobloxService.StarterPack]: { runtimeContext: RuntimeContext.Shared },
 	[RobloxService.StarterPlayer]: { runtimeContext: RuntimeContext.Shared },
+	[RobloxService.StarterPlayerScripts]: { runtimeContext: RuntimeContext.Client },
 	[RobloxService.TestService]: { runtimeContext: RuntimeContext.Testing },
 	[RobloxService.TextChatService]: { runtimeContext: RuntimeContext.Shared },
 	[RobloxService.Workspace]: { runtimeContext: RuntimeContext.Shared },

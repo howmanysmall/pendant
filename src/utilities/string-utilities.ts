@@ -147,3 +147,14 @@ const END_QUOTE_REGEX = /["']$/;
 export function removeQuotes(value: string): string {
 	return value.replace(START_QUOTE_REGEX, "").replace(END_QUOTE_REGEX, "");
 }
+
+/**
+ * Wrapper around `String.prototype.trim` that ensures the string is trimmed of
+ * whitespace from both ends. Used for `Array.prototype.map` type functions.
+ *
+ * @param value - The string to trim.
+ * @returns The trimmed string.
+ */
+export function trim(value: string): string {
+	return value.trim();
+}

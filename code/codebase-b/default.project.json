@@ -1,0 +1,43 @@
+{
+	"name": "codebase",
+	"tree": {
+		"$className": "DataModel",
+		"HttpService": {
+			"$className": "HttpService",
+			"$properties": { "HttpEnabled": true }
+		},
+		"ReplicatedFirst": {
+			"$className": "ReplicatedFirst",
+			"$ignoreUnknownInstances": true,
+			"$path": "src/replicated-first"
+		},
+		"ReplicatedStorage": {
+			"$className": "ReplicatedStorage",
+			"$ignoreUnknownInstances": true,
+			"$path": "src/shared"
+		},
+		"ServerScriptService": {
+			"$className": "ServerScriptService",
+			"$ignoreUnknownInstances": true,
+			"$path": "src/server"
+		},
+		"StarterPlayer": {
+			"$className": "StarterPlayer",
+			"$ignoreUnknownInstances": true,
+			"$properties": { "CameraMaxZoomDistance": 150 },
+			"StarterPlayerScripts": {
+				"$className": "StarterPlayerScripts",
+				"$ignoreUnknownInstances": true,
+				"$path": "src/client"
+			}
+		},
+		"TextChatService": {
+			"$className": "TextChatService",
+			"$ignoreUnknownInstances": true,
+			"$properties": {
+				"ChatTranslationEnabled": true,
+				"ChatVersion": "TextChatService"
+			}
+		}
+	}
+}

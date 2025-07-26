@@ -2,14 +2,11 @@
 	"$schema": "./.schemas/pendant-configuration.schema.json",
 	"files": {
 		"client": [
-			"src/ReplicatedFirst/**",
-			"src/StarterPlayer/StarterPlayerScripts/**"
+			"src/client/**",
+			"src/replicated-first/**"
 		],
-		"server": [
-			"src/ServerStorage/**",
-			"src/ServerScriptService/**"
-		],
-		"shared": ["src/ReplicatedStorage/**"]
+		"server": ["src/server/**"],
+		"shared": ["src/shared/**"]
 	},
 	"ignoreGlobs": [
 		"Packages/**",

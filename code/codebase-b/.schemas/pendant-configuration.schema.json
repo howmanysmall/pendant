@@ -52,11 +52,7 @@
 				}
 			},
 			"readOnly": true,
-			"required": [
-				"client",
-				"server",
-				"shared"
-			],
+			"required": ["client", "server", "shared"],
 			"type": "object"
 		},
 		"ignoreGlobs": {

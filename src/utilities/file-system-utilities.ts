@@ -23,16 +23,6 @@ interface WithMockMode {
 	readonly mockMode?: boolean;
 }
 
-function joinDirent(dirent: Dirent): string {
-	return join(dirent.parentPath, dirent.name);
-}
-function isDirectory(dirent: Dirent): boolean {
-	return dirent.isDirectory();
-}
-function isFile(dirent: Dirent): boolean {
-	return dirent.isFile();
-}
-
 /**
  * Enumerates supported file system entry types.
  *
@@ -92,11 +82,18 @@ export const enum ContentType {
  *   array if the path is not a directory.
  */
 export async function getChildrenAsync(path: string): Promise<Array<string>> {
-	const stats = await stat(path);
-	if (!stats.isDirectory()) return [];
+	try {
+		const stats = await stat(path);
+		if (!stats.isDirectory()) return [];
 
-	const files = await readdir(path, { withFileTypes: true });
-	return files.map(joinDirent);
+		const files = await readdir(path, { withFileTypes: true });
+		const children = new Array<string>(files.length);
+		let index = 0;
+		for (const file of files) children[index++] = join(file.parentPath, file.name);
+		return children;
+	} catch {
+		return [];
+	}
 }
 
 /**
@@ -110,19 +107,27 @@ export async function getChildrenAsync(path: string): Promise<Array<string>> {
  *   array if the path is not a directory.
  */
 export async function getDirectoriesAsync(path: string, ignoreGlobs?: ReadonlyArray<Glob>): Promise<Array<string>> {
-	const stats = await stat(path);
-	if (!stats.isDirectory()) return [];
+	try {
+		const stats = await stat(path);
+		if (!stats.isDirectory()) return [];
 
-	const files = await readdir(path, { withFileTypes: true });
-	const results = files.filter(isDirectory).map(joinDirent);
-	// terrible code, but do I care? no!
-	if (ignoreGlobs)
-		return results.filter((directory): boolean => {
-			for (const glob of ignoreGlobs) if (glob.match(directory)) return true;
-			return false;
-		});
+		const files = await readdir(path, { withFileTypes: true });
+		const directories = new Array<string>();
+		let length = 0;
 
-	return results;
+		for (const file of files) {
+			if (!file.isDirectory()) continue;
+			const fullPath = join(file.parentPath, file.name);
+
+			if (ignoreGlobs) {
+				const shouldIgnore = ignoreGlobs.some((glob) => glob.match(fullPath));
+				if (!shouldIgnore) directories[length++] = fullPath;
+			} else directories[length++] = fullPath;
+		}
+		return directories;
+	} catch {
+		return [];
+	}
 }
 
 /**
@@ -135,19 +140,27 @@ export async function getDirectoriesAsync(path: string, ignoreGlobs?: ReadonlyAr
  *   the path is not a directory.
  */
 export async function getFilesAsync(path: string, ignoreGlobs?: ReadonlyArray<Glob>): Promise<Array<string>> {
-	const stats = await stat(path);
-	if (!stats.isDirectory()) return [];
+	try {
+		const stats = await stat(path);
+		if (!stats.isDirectory()) return [];
 
-	const files = await readdir(path, { withFileTypes: true });
-	const results = files.filter(isFile).map(joinDirent);
-	// terrible code, but do I care? no!
-	if (ignoreGlobs)
-		return results.filter((directory): boolean => {
-			for (const glob of ignoreGlobs) if (glob.match(directory)) return true;
-			return false;
-		});
+		const files = await readdir(path, { withFileTypes: true });
+		const results = new Array<string>();
+		let length = 0;
 
-	return results;
+		for (const file of files) {
+			if (!file.isFile()) continue;
+			const fullPath = join(file.parentPath, file.name);
+
+			if (ignoreGlobs) {
+				const shouldIgnore = ignoreGlobs.some((glob) => glob.match(fullPath));
+				if (!shouldIgnore) results[length++] = fullPath;
+			} else results[length++] = fullPath;
+		}
+		return results;
+	} catch {
+		return [];
+	}
 }
 
 /**

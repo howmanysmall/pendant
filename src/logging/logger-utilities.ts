@@ -91,7 +91,37 @@ export function profileEnd(operationName: string): number | undefined {
 export function logMemoryUsage(context?: string): void {
 	const memoryUsage = process.memoryUsage();
 	const formattedContext = context ? ` - ${context}` : "";
-	logger.info(`Memory usage${formattedContext}`, { memoryUsage });
+
+	/**
+	 * Format memory values in MB for better readability.
+	 *
+	 * @param bytes - The memory value in bytes.
+	 * @returns The formatted memory string in MB.
+	 */
+	const formatMemory = (bytes: number): string => `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+
+	logger.info(`Memory usage${formattedContext}`, {
+		memoryUsage: {
+			arrayBuffers: formatMemory(memoryUsage.arrayBuffers),
+			external: formatMemory(memoryUsage.external),
+			heapTotal: formatMemory(memoryUsage.heapTotal),
+			heapUsed: formatMemory(memoryUsage.heapUsed),
+			rss: formatMemory(memoryUsage.rss),
+		},
+	});
+}
+
+/**
+ * Force garbage collection if available (for development and debugging).
+ *
+ * @remarks
+ * This requires running with --expose-gc flag.
+ */
+export function forceGarbageCollection(): void {
+	if (typeof global.gc === "function") {
+		global.gc();
+		logger.debug("Forced garbage collection");
+	} else logger.warn("Garbage collection not available (run with --expose-gc)");
 }
 
 /**

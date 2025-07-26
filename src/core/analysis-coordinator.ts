@@ -112,39 +112,46 @@ export default class AnalysisCoordinator {
 			await generateSourcemapAsync(options.projectFile);
 			if (options.verbose) logger.info("Sourcemap generated");
 
-			// Run analysis for each context
+			// Pre-allocate results array for better performance
 			const results = new Array<ContextAnalysisResult>();
+			const contextEntries = Array.from(options.paths.entries());
 
-			for (const [context, paths] of options.paths) {
-				if (paths.length === 0) continue;
-				if (options.verbose) logger.debug(`Analyzing ${context} context: ${paths.length} paths`);
+			// Run analysis for each context in parallel where possible
+			const analysisPromises = contextEntries
+				.filter(([, paths]) => paths.length > 0)
+				.map(async ([context, paths]) => {
+					if (options.verbose) logger.debug(`Analyzing ${context} context: ${paths.length} paths`);
 
-				const result = await this.lspRunner.executeAnalysisAsync({
-					ignorePatterns: options.ignorePatterns,
-					paths: Array.from(paths),
-					timeout: options.timeout,
-					verbose: options.verbose,
+					const result = await this.lspRunner.executeAnalysisAsync({
+						ignorePatterns: options.ignorePatterns,
+						paths: Array.from(paths),
+						timeout: options.timeout,
+						verbose: options.verbose,
+					});
+
+					// Parse issues from output
+					const output = result.stdout || result.stderr;
+					const issues = parseLuauLspOutput(output);
+
+					if (!result.success && options.verbose)
+						logger.warn(`Analysis failed for ${context} context (exit code: ${result.exitCode})`);
+
+					return {
+						context,
+						issues,
+						rawOutput: output,
+					} as ContextAnalysisResult;
 				});
 
-				// Parse issues from output
-				const output = result.stdout || result.stderr;
-				const issues = parseLuauLspOutput(output);
-
-				results.push({
-					context,
-					issues,
-					rawOutput: output,
-				});
-
-				if (!result.success && options.verbose)
-					logger.warn(`Analysis failed for ${context} context (exit code: ${result.exitCode})`);
-			}
+			// Wait for all analysis to complete
+			const analysisResults = await Promise.all(analysisPromises);
+			results.push(...analysisResults);
 
 			// Format and display results
 			const { problemsFileContent, stringBuilder } = formatAnalysisResults(results, options.watchMode);
 			const duration = bunPerformanceNow() - startTime;
 
-			// Write problems file only if content changed
+			// Write problems file only if content changed (optimization for watch mode)
 			if (this.lastProblematicContent !== problemsFileContent) {
 				this.lastProblematicContent = problemsFileContent;
 				await Bun.write(options.outputFile, problemsFileContent);
@@ -154,7 +161,8 @@ export default class AnalysisCoordinator {
 			const finalOutput = updateStringBuilder(stringBuilder, duration, options.watchMode).join("\n");
 			consoleInfo(finalOutput);
 		} catch (error) {
-			logger.error(`Analysis failed: ${error}`);
+			const duration = bunPerformanceNow() - startTime;
+			logger.error(`Analysis failed after ${duration.toFixed(2)}ms: ${error}`);
 			throw error;
 		}
 	}

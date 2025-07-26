@@ -1,6 +1,39 @@
+import ignore from "ignore";
 import { createNamespaceLogger } from "logging/logger-utilities";
 
 const logger = createNamespaceLogger("gitignore-utilities");
+
+const DEFAULT_GITIGNORE_PATH = ".gitignore";
+
+/**
+ * Creates an ignore filter from a .gitignore file using the ignore package.
+ *
+ * @param gitignorePath - The path to the .gitignore file.
+ * @returns An ignore instance that can be used to filter paths.
+ */
+export async function createIgnoreFilterAsync(
+	gitignorePath = DEFAULT_GITIGNORE_PATH,
+): Promise<ReturnType<typeof ignore>> {
+	const ig = ignore();
+
+	try {
+		const file = Bun.file(gitignorePath);
+		const exists = await file.exists();
+		if (!exists) {
+			logger.debug(`No .gitignore file found at ${gitignorePath}`);
+			return ig;
+		}
+
+		const content = await file.text();
+		ig.add(content);
+
+		logger.debug(`Loaded gitignore patterns from ${gitignorePath}`);
+		return ig;
+	} catch (error) {
+		logger.warn(`Failed to read .gitignore file: ${error}`);
+		return ig;
+	}
+}
 
 /**
  * Parses a .gitignore file and extracts valid glob patterns.
@@ -8,7 +41,7 @@ const logger = createNamespaceLogger("gitignore-utilities");
  * @param gitignorePath - The path to the .gitignore file.
  * @returns Array of glob patterns suitable for luau-lsp ignore flags.
  */
-export async function parseGitignoreAsync(gitignorePath = ".gitignore"): Promise<ReadonlyArray<string>> {
+export async function parseGitignoreAsync(gitignorePath = DEFAULT_GITIGNORE_PATH): Promise<ReadonlyArray<string>> {
 	try {
 		const file = Bun.file(gitignorePath);
 		const exists = await file.exists();

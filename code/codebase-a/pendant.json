@@ -1,11 +1,26 @@
 {
 	"$schema": "./.schemas/pendant-configuration.schema.json",
 	"files": {
-		"client": ["src/ReplicatedFirst/**", "src/StarterPlayer/**"],
-		"server": ["src/ServerScriptService/**", "src/ServerStorage/**"],
-		"shared": ["src/ReplicatedStorage/**"]
+		"client": [
+			"src/ReplicatedFirst/**",
+			"src/StarterPlayer/StarterPlayerScripts/**"
+		],
+		"server": [
+			"src/ServerStorage/**",
+			"src/ServerScriptService/**",
+			"Vendor/Server/DataStoreService/**"
+		],
+		"shared": [
+			"src/ReplicatedStorage/**",
+			"Vendor/Shared/Base64/**"
+		]
 	},
-	"ignoreGlobs": ["Packages/**", "ServerPackages/**", "DevPackages/**", "Vendor/**"],
+	"ignoreGlobs": [
+		"Packages/**",
+		"ServerPackages/**",
+		"DevPackages/**",
+		"Vendor/**"
+	],
 	"outputFileName": "problematic",
 	"projectFile": "default.project.json"
 }

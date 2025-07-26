@@ -67,11 +67,9 @@ export const analyzeCommand = defineCommand({
 			commandSpinner.stop();
 
 			// Build ignore patterns
-			const ignorePatterns = new Array<string>();
-			if (configuration.ignoreGlobs) {
-				let size = 0;
-				for (const file of configuration.ignoreGlobs) ignorePatterns[size++] = file;
-				if (verbose) logger.info(`Added ${size} problematic file patterns to ignore list`);
+			const ignorePatterns = configuration.ignoreGlobs ?? [];
+			if (verbose && ignorePatterns.length > 0) {
+				logger.info(`Added ${ignorePatterns.length} problematic file patterns to ignore list`);
 			}
 
 			const analysisOptions = {

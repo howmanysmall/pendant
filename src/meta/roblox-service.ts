@@ -38,6 +38,8 @@ export const enum RobloxService {
 	StarterPack = "StarterPack",
 	/** Contains starter player objects and settings. */
 	StarterPlayer = "StarterPlayer",
+	/** Contains scripts that run on each player's client. */
+	StarterPlayerScripts = "StarterPlayerScripts",
 	/** Provides testing utilities and services. */
 	TestService = "TestService",
 	/** Manages text-based chat functionality. */
