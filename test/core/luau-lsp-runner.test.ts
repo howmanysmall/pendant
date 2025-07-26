@@ -101,27 +101,16 @@ describe("luau-lsp-runner", () => {
 				expect(command).toContain("custom/path");
 			});
 
-			it("should include default ignore patterns", async () => {
-				// Create files that match the default ignore patterns
-				await Bun.$`mkdir -p ${temporaryDirectory}/DevPackages`;
-				await Bun.$`mkdir -p ${temporaryDirectory}/Packages`;
-				await Bun.$`mkdir -p ${temporaryDirectory}/ServerPackages`;
-				await Bun.$`mkdir -p ${temporaryDirectory}/Vendor`;
-				await Bun.write(`${temporaryDirectory}/DevPackages/test.luau`, "");
-				await Bun.write(`${temporaryDirectory}/Packages/test.luau`, "");
-				await Bun.write(`${temporaryDirectory}/ServerPackages/test.luau`, "");
-				await Bun.write(`${temporaryDirectory}/Vendor/test.luau`, "");
-
+			it("should not include any ignore patterns when none are provided", async () => {
 				const options: LuauLspAnalysisOptions = {
 					paths: ["src/"],
 				};
 
 				const command = await (runner as unknown as PrivateLuauLspRunner).buildCommandAsync(options);
 
-				expect(command).toContain('--ignore="DevPackages/**/*.{luau,lua}"');
-				expect(command).toContain('--ignore="Packages/**/*.{luau,lua}"');
-				expect(command).toContain('--ignore="ServerPackages/**/*.{luau,lua}"');
-				expect(command).toContain('--ignore="Vendor/**/*.{luau,lua}"');
+				// Should not contain any --ignore flags
+				const ignoreFlags = command.filter(arg => arg.startsWith("--ignore="));
+				expect(ignoreFlags).toHaveLength(0);
 			});
 
 			it("should include custom ignore patterns", async () => {

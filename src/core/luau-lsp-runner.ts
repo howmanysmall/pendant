@@ -4,12 +4,6 @@ import { addQuoted, removeQuotes } from "utilities/string-utilities";
 
 const logger = createNamespaceLogger("luau-lsp-runner");
 
-const DEFAULT_IGNORES = [
-	"DevPackages/**/*.{luau,lua}",
-	"Packages/**/*.{luau,lua}",
-	"ServerPackages/**/*.{luau,lua}",
-	"Vendor/**/*.{luau,lua}",
-];
 
 /** Options for configuring the Luau LSP analysis. */
 export interface LuauLspAnalysisOptions {
@@ -124,7 +118,7 @@ export class LuauLspRunner {
 		const baseConfigPath = options.baseConfigPath ?? ".luaurc";
 		if (await Bun.file(`${this.cwd}/${baseConfigPath}`).exists()) command.push(`--base-luaurc=${baseConfigPath}`);
 
-		const patterns = [...DEFAULT_IGNORES, ...(options.ignorePatterns ?? [])];
+		const patterns = options.ignorePatterns ?? [];
 
 		const results = await Promise.all(
 			patterns.map(async (pattern) => {
