@@ -1,8 +1,12 @@
 import chalk from "chalk";
+import ignore from "ignore";
 import type RuntimeContext from "meta/runtime-context";
 import RuntimeContextMeta from "meta/runtime-context-meta";
 import prettyMilliseconds from "pretty-ms";
 import { pluralize } from "utilities/english-utilities";
+
+const PREFIX_SLASH_REGEX = /^\//;
+const SPECIAL_CHARACTER_REGEX = /[.*+?^${}()|[\]\\]/g;
 
 /** Represents a single analysis issue found by luau-lsp. */
 export interface AnalysisIssue {
@@ -82,36 +86,52 @@ const LEADING_SLASH_REGEX = /^\/+/;
  * that don't match the main pattern (e.g., "caused by:", explanatory text).
  *
  * @param output - The raw string output from the luau-lsp analyze command.
+ * @param ignorePatterns - Optional array of glob patterns to filter out issues.
  * @returns An array of parsed `AnalysisIssue` objects.
  */
-export function parseLuauLspOutput(output: string): ReadonlyArray<AnalysisIssue> {
+export function parseLuauLspOutput(
+	output: string,
+	ignorePatterns?: ReadonlyArray<string>,
+): ReadonlyArray<AnalysisIssue> {
 	const issues = new Array<AnalysisIssue>();
 	let length = 0;
 	const lines = output.split("\n");
 
 	for (let index = 0; index < lines.length; index += 1) {
-		const line = lines[index]?.trim();
+		const line = lines[index];
 		if (line === undefined || line.length === 0) continue;
 
-		const match = line.match(FILE_PATH_REGEX);
+		const match = line.trim().match(FILE_PATH_REGEX);
 		if (match) {
 			const [, rawPath, lineString, columnString, message] = match;
 			if (!rawPath || !lineString || !columnString || !message) continue;
 
-			const filePath = rawPath.replace(DOUBLE_SLASH_REGEX, "/").replace(LEADING_SLASH_REGEX, "");
+			let filePath = rawPath.replace(DOUBLE_SLASH_REGEX, "/").replace(LEADING_SLASH_REGEX, "");
+
+			// Convert to relative path by replacing the source path prefix
+			// This replicates the original Luau logic: replace actual source path with relative path
+
+			// Get the current working directory and create a pattern to match it
+			/** Remove leading slash. */
+			const sourcePath = process.cwd().replace(PREFIX_SLASH_REGEX, "");
+			/** Escape regex chars. */
+			const escapedSourcePath = sourcePath.replace(SPECIAL_CHARACTER_REGEX, "\\$&");
+			const sourcePattern = new RegExp(`^${escapedSourcePath}/`);
+
+			// Replace the full source path prefix with empty string to get relative path
+			filePath = filePath.replace(sourcePattern, "");
 
 			let fullMessage = message;
 			let nextIndex = index + 1;
 
 			while (nextIndex < lines.length) {
-				const nextLine = lines[nextIndex]?.trim();
+				const nextLine = lines[nextIndex];
 				if (nextLine === undefined || nextLine.length === 0) {
 					nextIndex += 1;
 					continue;
 				}
 
-				if (FILE_PATH_REGEX.test(nextLine)) break;
-
+				if (FILE_PATH_REGEX.test(nextLine.trim())) break;
 				fullMessage += `\n${nextLine}`;
 				nextIndex += 1;
 			}
@@ -127,6 +147,13 @@ export function parseLuauLspOutput(output: string): ReadonlyArray<AnalysisIssue>
 			// Skip the lines we've already processed
 			index = nextIndex - 1;
 		}
+	}
+
+	// Filter out issues that match ignore patterns
+	if (ignorePatterns && ignorePatterns.length > 0) {
+		const ignoreFilter = ignore();
+		ignoreFilter.add(ignorePatterns);
+		return issues.filter((issue) => !ignoreFilter.ignores(issue.filePath));
 	}
 
 	return issues;
@@ -150,11 +177,20 @@ export function formatAnalysisResults(
 	const issuesByContext = new Map<RuntimeContext, number>();
 	const allIssues = new Array<AnalysisIssue>();
 
-	// Collect all issues and count by context
+	// Collect all issues and count by context, with deduplication
+	const issueMap = new Map<string, AnalysisIssue>();
+
 	for (const result of results) {
 		issuesByContext.set(result.context, result.issues.length);
-		allIssues.push(...result.issues);
+
+		// Deduplicate issues by creating a unique key for each issue
+		for (const issue of result.issues) {
+			const issueKey = `${issue.filePath}:${issue.line}:${issue.column}:${issue.message}`;
+			if (!issueMap.has(issueKey)) issueMap.set(issueKey, issue);
+		}
 	}
+
+	allIssues.push(...issueMap.values());
 
 	const totalIssues = allIssues.length;
 	const stringBuilder = [
@@ -166,12 +202,11 @@ export function formatAnalysisResults(
 	let length = 1;
 
 	// Context breakdown
-	for (const [context, count] of issuesByContext)
-		if (count > 0) {
-			const { name, chalkInstance = BOLD, emoji } = RuntimeContextMeta[context];
-			stringBuilder[length++] =
-				`\t${emoji} ${chalkInstance(name)}: ${formatNumber(count)} ${pluralize(count, "issue")}`;
-		}
+	for (const [context, count] of issuesByContext) {
+		const { name, chalkInstance = BOLD, emoji } = RuntimeContextMeta[context];
+		stringBuilder[length++] =
+			`\t${emoji} ${chalkInstance(name)}: ${formatNumber(count)} ${pluralize(count, "issue")}`;
+	}
 
 	// Generate problems file content (raw issues for external tools)
 	const problemsFileContent = allIssues

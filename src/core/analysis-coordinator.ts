@@ -131,7 +131,7 @@ export default class AnalysisCoordinator {
 
 					// Parse issues from output
 					const output = result.stdout || result.stderr;
-					const issues = parseLuauLspOutput(output);
+					const issues = parseLuauLspOutput(output, options.ignorePatterns);
 
 					if (!result.success && options.verbose)
 						logger.warn(`Analysis failed for ${context} context (exit code: ${result.exitCode})`);
