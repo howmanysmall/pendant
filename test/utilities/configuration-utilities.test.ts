@@ -47,7 +47,7 @@ function getFirstTest(
 			expect(result.files.server).toEqual(EXPECTED_SERVER_FILES);
 			expect(result.files.shared).toEqual(EXPECTED_SHARED_FILES);
 			expect(result.files.testing).toEqual(EXPECTED_TESTING_FILES);
-			expect(result.knownProblematicFiles).toEqual(EXPECTED_PROBLEMATIC_FILES);
+			expect(result.ignoreGlobs).toEqual(EXPECTED_PROBLEMATIC_FILES);
 			expect(result.outputFileName).toBe("problematic");
 			expect(result.projectFile).toBe(DEFAULT);
 		});
@@ -188,7 +188,7 @@ function getFirstTest(
 			const result = await callback(join(getTemporaryDirectory(), CORRECTLY_NAMED_DOT_PENDANT));
 
 			expect(result.files.testing).toEqual(EXPECTED_TESTING_FILES);
-			expect(result.knownProblematicFiles).toEqual(EXPECTED_PROBLEMATIC_FILES);
+			expect(result.ignoreGlobs).toEqual(EXPECTED_PROBLEMATIC_FILES);
 			expect(result.outputFileName).toBe("problematic");
 			expect(result.projectFile).toBe(DEFAULT);
 		});

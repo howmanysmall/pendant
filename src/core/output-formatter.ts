@@ -18,10 +18,6 @@ export interface AnalysisIssue {
 	readonly severity: "error" | "info" | "warning";
 }
 
-function trim(value: string): string {
-	return value.trim();
-}
-
 /** Represents the analysis result for a specific runtime context. */
 export interface ContextAnalysisResult {
 	/** The runtime context to which these results belong. */
@@ -82,30 +78,54 @@ const LEADING_SLASH_REGEX = /^\/+/;
  * Expected format for each issue line: "src/Util/Constants.luau(14,23):
  * TypeError: Value of type 'Instance?' could be nil".
  *
+ * Handles multiline errors where additional context appears on subsequent lines
+ * that don't match the main pattern (e.g., "caused by:", explanatory text).
+ *
  * @param output - The raw string output from the luau-lsp analyze command.
  * @returns An array of parsed `AnalysisIssue` objects.
  */
 export function parseLuauLspOutput(output: string): ReadonlyArray<AnalysisIssue> {
 	const issues = new Array<AnalysisIssue>();
-	const lines = output.split("\n").filter(trim);
+	let length = 0;
+	const lines = output.split("\n");
 
-	for (const line of lines) {
-		// Match pattern: "path/to/file.luau(line,column): message"
+	for (let index = 0; index < lines.length; index += 1) {
+		const line = lines[index]?.trim();
+		if (line === undefined || line.length === 0) continue;
+
 		const match = line.match(FILE_PATH_REGEX);
 		if (match) {
 			const [, rawPath, lineString, columnString, message] = match;
 			if (!rawPath || !lineString || !columnString || !message) continue;
 
-			// Clean up the file path (remove double slashes, normalize)
 			const filePath = rawPath.replace(DOUBLE_SLASH_REGEX, "/").replace(LEADING_SLASH_REGEX, "");
 
-			issues.push({
+			let fullMessage = message;
+			let nextIndex = index + 1;
+
+			while (nextIndex < lines.length) {
+				const nextLine = lines[nextIndex]?.trim();
+				if (nextLine === undefined || nextLine.length === 0) {
+					nextIndex += 1;
+					continue;
+				}
+
+				if (FILE_PATH_REGEX.test(nextLine)) break;
+
+				fullMessage += `\n${nextLine}`;
+				nextIndex += 1;
+			}
+
+			issues[length++] = {
 				column: Number.parseInt(columnString, 10),
 				filePath,
 				line: Number.parseInt(lineString, 10),
-				message,
+				message: fullMessage,
 				severity: message.toLowerCase().includes("error") ? "error" : "warning",
-			});
+			};
+
+			// Skip the lines we've already processed
+			index = nextIndex - 1;
 		}
 	}
 
@@ -163,7 +183,7 @@ export function formatAnalysisResults(
 
 const MATCH_NUMBER_REGEX = /\d+\.?\d*/g;
 function colorNumber(match: string): string {
-	return chalk.bold.cyan(match);
+	return CYAN_BOLD(match);
 }
 function colorifyNumbersInString(value: string): string {
 	return value.replace(MATCH_NUMBER_REGEX, colorNumber);

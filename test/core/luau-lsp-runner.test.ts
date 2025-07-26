@@ -42,10 +42,26 @@ describe("luau-lsp-runner", () => {
 			});
 		});
 
-		describe("buildCommand", () => {
+		describe("buildCommandAsync", () => {
 			it("should build basic command with required options", async () => {
+				// Create expected files so they're included in the command
+				await Bun.write(`${temporaryDirectory}/.luaurc`, "{}");
+				await Bun.$`mkdir -p ${temporaryDirectory}/.vscode`;
+				await Bun.write(`${temporaryDirectory}/.vscode/settings.json`, "{}");
+				await Bun.write(`${temporaryDirectory}/sourcemap.json`, "{}");
+
+				// Create some files that match the default ignore patterns
+				await Bun.$`mkdir -p ${temporaryDirectory}/DevPackages`;
+				await Bun.$`mkdir -p ${temporaryDirectory}/Packages`;
+				await Bun.write(`${temporaryDirectory}/DevPackages/test.luau`, "");
+				await Bun.write(`${temporaryDirectory}/Packages/test.luau`, "");
+
 				const options: LuauLspAnalysisOptions = {
+					// Explicitly set paths to ensure they're checked in the temp directory
+					baseConfigPath: ".luaurc",
 					paths: ["src/", "lib/"],
+					settingsPath: ".vscode/settings.json",
+					sourcemapPath: "sourcemap.json",
 				};
 
 				// Access private method for testing
@@ -63,6 +79,11 @@ describe("luau-lsp-runner", () => {
 			});
 
 			it("should use custom paths when provided", async () => {
+				// Create custom files so they're included in the command
+				await Bun.write(`${temporaryDirectory}/custom.luaurc`, "{}");
+				await Bun.write(`${temporaryDirectory}/custom-settings.json`, "{}");
+				await Bun.write(`${temporaryDirectory}/custom-sourcemap.json`, "{}");
+
 				const options: LuauLspAnalysisOptions = {
 					baseConfigPath: "custom.luaurc",
 					definitionsPath: "custom-types.d.luau",
@@ -81,19 +102,35 @@ describe("luau-lsp-runner", () => {
 			});
 
 			it("should include default ignore patterns", async () => {
+				// Create files that match the default ignore patterns
+				await Bun.$`mkdir -p ${temporaryDirectory}/DevPackages`;
+				await Bun.$`mkdir -p ${temporaryDirectory}/Packages`;
+				await Bun.$`mkdir -p ${temporaryDirectory}/ServerPackages`;
+				await Bun.$`mkdir -p ${temporaryDirectory}/Vendor`;
+				await Bun.write(`${temporaryDirectory}/DevPackages/test.luau`, "");
+				await Bun.write(`${temporaryDirectory}/Packages/test.luau`, "");
+				await Bun.write(`${temporaryDirectory}/ServerPackages/test.luau`, "");
+				await Bun.write(`${temporaryDirectory}/Vendor/test.luau`, "");
+
 				const options: LuauLspAnalysisOptions = {
 					paths: ["src/"],
 				};
 
 				const command = await (runner as unknown as PrivateLuauLspRunner).buildCommandAsync(options);
 
-				expect(command).toContain("--ignore=DevPackages/**/*.{luau,lua}");
-				expect(command).toContain("--ignore=Packages/**/*.{luau,lua}");
-				expect(command).toContain("--ignore=ServerPackages/**/*.{luau,lua}");
-				expect(command).toContain("--ignore=Vendor/**/*.{luau,lua}");
+				expect(command).toContain('--ignore="DevPackages/**/*.{luau,lua}"');
+				expect(command).toContain('--ignore="Packages/**/*.{luau,lua}"');
+				expect(command).toContain('--ignore="ServerPackages/**/*.{luau,lua}"');
+				expect(command).toContain('--ignore="Vendor/**/*.{luau,lua}"');
 			});
 
 			it("should include custom ignore patterns", async () => {
+				// Create files that match the custom ignore patterns
+				await Bun.$`mkdir -p ${temporaryDirectory}/custom`;
+				await Bun.$`mkdir -p ${temporaryDirectory}/temp`;
+				await Bun.write(`${temporaryDirectory}/custom/test.luau`, "");
+				await Bun.write(`${temporaryDirectory}/temp/test.lua`, "");
+
 				const options: LuauLspAnalysisOptions = {
 					ignorePatterns: ["custom/**/*.luau", "temp/**/*.lua"],
 					paths: ["src/"],
@@ -101,8 +138,8 @@ describe("luau-lsp-runner", () => {
 
 				const command = await (runner as unknown as PrivateLuauLspRunner).buildCommandAsync(options);
 
-				expect(command).toContain("--ignore=custom/**/*.luau");
-				expect(command).toContain("--ignore=temp/**/*.lua");
+				expect(command).toContain('--ignore="custom/**/*.luau"');
+				expect(command).toContain('--ignore="temp/**/*.lua"');
 			});
 
 			it("should handle paths with spaces and special characters", async () => {

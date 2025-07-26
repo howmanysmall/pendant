@@ -237,18 +237,34 @@ export async function collectFromConfigurationAsync(
 		const allPaths = extractPathsFromEntry(value);
 		let matchedContext: RuntimeContext | undefined;
 
-		// Check each path against configuration patterns
-		for (const path of allPaths) {
-			for (const [context, patterns] of Object.entries(configuration.files)) {
-				const runtimeContext = getRuntimeContextFromKey(context);
-				if (!runtimeContext) continue;
+		// First try to match by service name (for direct service references)
+		for (const [context, patterns] of Object.entries(configuration.files)) {
+			const runtimeContext = getRuntimeContextFromKey(context);
+			if (!runtimeContext) continue;
 
-				if (pathMatchesPatternsGlob(path, patterns)) {
-					matchedContext = runtimeContext;
-					break;
-				}
+			// Check if service name matches any pattern directly
+			if (patterns.includes(key) || (className && patterns.includes(className))) {
+				matchedContext = runtimeContext;
+				break;
 			}
-			if (matchedContext) break;
+		}
+
+		// If no service name match, try path-based matching
+		if (!matchedContext) {
+			for (const path of allPaths) {
+				for (const [context, patterns] of Object.entries(configuration.files)) {
+					const runtimeContext = getRuntimeContextFromKey(context);
+					// eslint-disable-next-line max-depth -- what do you expect me to do?
+					if (!runtimeContext) continue;
+
+					// eslint-disable-next-line max-depth -- what do you expect me to do?
+					if (pathMatchesPatternsGlob(path, patterns)) {
+						matchedContext = runtimeContext;
+						break;
+					}
+				}
+				if (matchedContext) break;
+			}
 		}
 
 		if (matchedContext) {

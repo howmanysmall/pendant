@@ -116,13 +116,13 @@ export class LuauLspRunner {
 		];
 
 		const settingsPath = options.settingsPath ?? ".vscode/settings.json";
-		if (await Bun.file(settingsPath).exists()) command.push(`--settings=${settingsPath}`);
+		if (await Bun.file(`${this.cwd}/${settingsPath}`).exists()) command.push(`--settings=${settingsPath}`);
 
 		const sourcemapPath = options.sourcemapPath ?? "sourcemap.json";
-		if (await Bun.file(sourcemapPath).exists()) command.push(`--sourcemap=${sourcemapPath}`);
+		if (await Bun.file(`${this.cwd}/${sourcemapPath}`).exists()) command.push(`--sourcemap=${sourcemapPath}`);
 
 		const baseConfigPath = options.baseConfigPath ?? ".luaurc";
-		if (await Bun.file(baseConfigPath).exists()) command.push(`--base-luaurc=${baseConfigPath}`);
+		if (await Bun.file(`${this.cwd}/${baseConfigPath}`).exists()) command.push(`--base-luaurc=${baseConfigPath}`);
 
 		const patterns = [...DEFAULT_IGNORES, ...(options.ignorePatterns ?? [])];
 

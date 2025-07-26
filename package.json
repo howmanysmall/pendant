@@ -11,10 +11,12 @@
 	"module": "src/index.ts",
 	"type": "module",
 	"devDependencies": {
+		"@anthropic-ai/sdk": "^0.57.0",
 		"@biomejs/biome": "^2.1.2",
 		"@bunli/test": "latest",
 		"@eslint-react/eslint-plugin": "^1.48.4",
 		"@eslint/config-inspector": "^1.1.0",
+		"@google/generative-ai": "^0.24.1",
 		"@isentinel/eslint-config": "^1.2.3",
 		"@mitata/counters": "^0.0.8",
 		"@types/bun": "latest",
@@ -58,7 +60,6 @@
 		"lint": "bun run ./scripts/lint.ts",
 		"test": "bun test",
 		"type-check": "bun x tsc --noEmit",
-
 		"analyze:a": "cd code/codebase-a && bun run ../../src/index.ts analyze && cd -",
 		"analyze:a:verbose": "cd code/codebase-a && bun run ../../src/index.ts analyze -V && cd -",
 		"analyze:missing": "cd code/codebase-missing && bun run ../../src/index.ts analyze && cd -",
