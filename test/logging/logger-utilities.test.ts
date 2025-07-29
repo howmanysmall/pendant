@@ -298,9 +298,7 @@ describe("logger-utilities", () => {
 
 			// Simulate some work
 			let _sum = 0;
-			for (let index = 0; index < 1000; index++) {
-				_sum += index;
-			}
+			for (let index = 0; index < 1000; index += 1) _sum += index;
 
 			const duration = profileEnd("cross-platform-test");
 
