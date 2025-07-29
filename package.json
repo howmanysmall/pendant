@@ -7,7 +7,7 @@
 		"pendant": "./dist/index.js"
 	},
 	"description": "Luau kind of sucks at linting itself. This fixes it. This is a Luau-LSP wrapper basically.",
-	"name": "pendant",
+	"name": "@roblox-tooling/pendant",
 	"module": "src/index.ts",
 	"type": "module",
 	"engines": {
