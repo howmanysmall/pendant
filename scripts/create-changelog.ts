@@ -330,13 +330,13 @@ function generateChangelogPrompt(
 /**
  * Attempts to send the prompt to an available LLM provider.
  *
- * @param prompt - The generated changelog prompt.
+ * @param _prompt - The generated changelog prompt.
  * @param config - LLM provider configuration.
  * @returns Promise resolving to generated changelog or undefined if no provider
  *   available.
  */
 async function generateChangelogWithLLMAsync(
-	prompt: string,
+	_prompt: string,
 	config: ProviderConfiguration,
 ): Promise<string | undefined> {
 	// This is a placeholder for LLM integration

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, spyOn } from "bun:test";
-import crypto from "node:crypto";
 import {
 	createCorrelatedLogger,
 	createNamespaceLogger,
@@ -10,6 +9,7 @@ import {
 	profileEnd,
 	type RequestParameters,
 } from "logging/logger-utilities";
+import crypto from "node:crypto";
 
 describe("logger-utilities", () => {
 	describe("createNamespaceLogger", () => {
@@ -49,7 +49,9 @@ describe("logger-utilities", () => {
 		});
 
 		it("should use crypto.randomUUID when no ID provided", () => {
-			const mockUUID = spyOn(crypto, "randomUUID").mockReturnValue("test-uuid" as any);
+			const mockUUID = spyOn(crypto, "randomUUID").mockReturnValue(
+				"test-uuid" as unknown as `${string}-${string}-${string}-${string}-${string}`,
+			);
 
 			const logger = createCorrelatedLogger();
 
@@ -65,8 +67,8 @@ describe("logger-utilities", () => {
 			const metadata = {
 				correlationId: "test-correlation-id",
 				ip: "127.0.0.1",
-				userId: "user-123",
 				service: "test-service",
+				userId: "user-123",
 			};
 
 			const logger = createRequestLoggerMetadata(metadata);
@@ -100,13 +102,13 @@ describe("logger-utilities", () => {
 			const operationName = "test-operation";
 
 			profileBegin(operationName);
-			
+
 			// Small delay to ensure measurable duration
 			const start = Date.now();
 			while (Date.now() - start < 1) {
 				// Busy wait for 1ms
 			}
-			
+
 			const duration = profileEnd(operationName);
 
 			expect(duration).toBeDefined();
@@ -151,26 +153,36 @@ describe("logger-utilities", () => {
 	describe("logMemoryUsage", () => {
 		it("should log memory usage without context", () => {
 			// This function logs to winston, so we just ensure it doesn't throw
-			expect(() => logMemoryUsage()).not.toThrow();
+			expect(() => {
+				logMemoryUsage();
+			}).not.toThrow();
 		});
 
 		it("should log memory usage with context", () => {
-			expect(() => logMemoryUsage("test-context")).not.toThrow();
+			expect(() => {
+				logMemoryUsage("test-context");
+			}).not.toThrow();
 		});
 
 		it("should work with various context strings", () => {
-			expect(() => logMemoryUsage("startup")).not.toThrow();
-			expect(() => logMemoryUsage("after-operation")).not.toThrow();
-			expect(() => logMemoryUsage("")).not.toThrow();
+			expect(() => {
+				logMemoryUsage("startup");
+			}).not.toThrow();
+			expect(() => {
+				logMemoryUsage("after-operation");
+			}).not.toThrow();
+			expect(() => {
+				logMemoryUsage("");
+			}).not.toThrow();
 		});
 	});
 
 	describe("createRequestLogger", () => {
 		it("should create request logger with all parameters", () => {
-			const requestParams: RequestParameters = {
+			const requestParameters: RequestParameters = {
 				headers: {
-					"user-agent": "test-agent",
 					"content-type": "application/json",
+					"user-agent": "test-agent",
 				},
 				ip: "192.168.1.1",
 				method: "GET",
@@ -178,7 +190,7 @@ describe("logger-utilities", () => {
 				userId: "user-123",
 			};
 
-			const requestLogger = createRequestLogger(requestParams);
+			const requestLogger = createRequestLogger(requestParameters);
 
 			expect(requestLogger).toBeDefined();
 			expect(requestLogger.correlationId).toBeDefined();
@@ -188,9 +200,9 @@ describe("logger-utilities", () => {
 		});
 
 		it("should create request logger with minimal parameters", () => {
-			const requestParams: RequestParameters = {};
+			const requestParameters: RequestParameters = {};
 
-			const requestLogger = createRequestLogger(requestParams);
+			const requestLogger = createRequestLogger(requestParameters);
 
 			expect(requestLogger).toBeDefined();
 			expect(requestLogger.correlationId).toBeDefined();
@@ -203,46 +215,58 @@ describe("logger-utilities", () => {
 
 			// UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 			expect(requestLogger.correlationId).toMatch(
-				/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+				/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
 			);
 		});
 
 		it("should handle logResponse without responseTime", () => {
 			const requestLogger = createRequestLogger({});
 
-			expect(() => requestLogger.logResponse(200)).not.toThrow();
+			expect(() => {
+				requestLogger.logResponse(200);
+			}).not.toThrow();
 		});
 
 		it("should handle logResponse with responseTime", () => {
 			const requestLogger = createRequestLogger({});
 
-			expect(() => requestLogger.logResponse(200, 150)).not.toThrow();
+			expect(() => {
+				requestLogger.logResponse(200, 150);
+			}).not.toThrow();
 		});
 
 		it("should handle different status codes", () => {
 			const requestLogger = createRequestLogger({});
 
-			expect(() => requestLogger.logResponse(200)).not.toThrow();
-			expect(() => requestLogger.logResponse(404)).not.toThrow();
-			expect(() => requestLogger.logResponse(500)).not.toThrow();
+			expect(() => {
+				requestLogger.logResponse(200);
+			}).not.toThrow();
+			expect(() => {
+				requestLogger.logResponse(404);
+			}).not.toThrow();
+			expect(() => {
+				requestLogger.logResponse(500);
+			}).not.toThrow();
 		});
 
 		it("should work with complex headers", () => {
-			const requestParams: RequestParameters = {
+			const requestParameters: RequestParameters = {
 				headers: {
+					accept: "application/json",
+					authorization: "Bearer token123",
 					"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-					"accept": "application/json",
-					"authorization": "Bearer token123",
 					"x-custom-header": "custom-value",
 				},
 				method: "POST",
 				url: "/api/users",
 			};
 
-			const requestLogger = createRequestLogger(requestParams);
+			const requestLogger = createRequestLogger(requestParameters);
 
 			expect(requestLogger).toBeDefined();
-			expect(() => requestLogger.logResponse(201, 89)).not.toThrow();
+			expect(() => {
+				requestLogger.logResponse(201, 89);
+			}).not.toThrow();
 		});
 	});
 
@@ -261,6 +285,7 @@ describe("logger-utilities", () => {
 			// process.memoryUsage() should work on all Node.js platforms
 			expect(() => {
 				const memUsage = process.memoryUsage();
+
 				expect(memUsage).toBeDefined();
 				expect(typeof memUsage.rss).toBe("number");
 				expect(typeof memUsage.heapUsed).toBe("number");
@@ -272,9 +297,9 @@ describe("logger-utilities", () => {
 			profileBegin("cross-platform-test");
 
 			// Simulate some work
-			let sum = 0;
-			for (let i = 0; i < 1000; i++) {
-				sum += i;
+			let _sum = 0;
+			for (let index = 0; index < 1000; index++) {
+				_sum += index;
 			}
 
 			const duration = profileEnd("cross-platform-test");

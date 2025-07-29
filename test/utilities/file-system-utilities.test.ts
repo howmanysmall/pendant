@@ -88,8 +88,8 @@ describe("file-system-utilities", () => {
 			expect(exists).toBe(true);
 
 			// Test with manually constructed paths using both separators
-			const unixStylePath = temporaryDirectory.replace(/\\/g, "/") + "/test.txt";
-			const windowsStylePath = temporaryDirectory.replace(/\//g, "\\") + "\\test.txt";
+			const unixStylePath = `${temporaryDirectory.replace(/\\/g, "/")}/test.txt`;
+			const windowsStylePath = `${temporaryDirectory.replace(/\//g, "\\")}\\test.txt`;
 
 			if (sep === "/") expect(await doesPathExistAsync(unixStylePath)).toBe(true);
 			else expect(await doesPathExistAsync(windowsStylePath)).toBe(true);
