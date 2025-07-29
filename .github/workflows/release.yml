@@ -2,61 +2,111 @@ name: Release
 
 on:
   release:
-    types: [created]
+    types: [published] # triggers when a release is actually published (incl. pre-releases)
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release'
+        description: "Version to release (e.g. v0.2.1)"
         required: true
-        default: 'v0.1.0'
+        default: "v0.1.0"
 
 permissions:
   contents: write
+  id-token: write # for npm provenance
 
 jobs:
-  build:
-    name: Build for ${{ matrix.platform }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          # Windows x86-64
-          - os: windows-latest
-            platform: windows-x64
-            target: bun-windows-x64
-            extension: .exe
-          # macOS x86-64
-          - os: macos-13
-            platform: macos-x64
-            target: bun-darwin-x64
-            extension: ''
-          # macOS ARM64
-          - os: macos-latest
-            platform: macos-arm64
-            target: bun-darwin-arm64
-            extension: ''
-          # Ubuntu x86-64
-          - os: ubuntu-latest
-            platform: linux-x64
-            target: bun-linux-x64
-            extension: ''
-          # Ubuntu ARM64 (cross-compile)
-          - os: ubuntu-latest
-            platform: linux-arm64
-            target: bun-linux-arm64
-            extension: ''
-
+  # Run linters once on Linux as part of release (keeps parity with CI)
+  quality:
+    name: Lint & type-check (Linux)
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout (release tag or input)
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.version }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Install dependencies
-        run: bun install
+      - name: Restore Bun global cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock*', 'package.json') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - name: Install dependencies (frozen lockfile)
+        run: bun ci
+
+      - name: Biome
+        run: bun run lint:biome
+
+      - name: ESLint
+        run: bun run lint:eslint
+
+      - name: TypeScript (tsc)
+        run: bun run lint:tsc
+
+  build:
+    name: Build binaries (${{ matrix.platform }})
+    needs: quality
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows-x64
+            target: bun-windows-x64
+            extension: .exe
+          - os: macos-13
+            platform: macos-x64
+            target: bun-darwin-x64
+            extension: ""
+          - os: macos-latest
+            platform: macos-arm64
+            target: bun-darwin-arm64
+            extension: ""
+          - os: ubuntu-latest
+            platform: linux-x64
+            target: bun-linux-x64
+            extension: ""
+          - os: ubuntu-latest
+            platform: linux-arm64
+            target: bun-linux-arm64
+            extension: ""
+
+    steps:
+      - name: Checkout (release tag or input)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.version }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Restore Bun global cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock*', 'package.json') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      # Optional: Windows-only node_modules cache to speed up install
+      - name: Cache node_modules (Windows only)
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/bun.lock*', 'package.json') }}
+          restore-keys: ${{ runner.os }}-modules-
+
+      - name: Install dependencies (frozen lockfile)
+        run: bun ci
 
       - name: Run tests
         run: bun test
@@ -65,49 +115,106 @@ jobs:
         run: bun run build
 
       - name: Create standalone executable
-        run: |
-          # Get version from tag or workflow input
-          if [ "${{ github.event_name }}" = "release" ]; then
-            VERSION="${{ github.event.release.tag_name }}"
-          else
-            VERSION="${{ github.event.inputs.version }}"
-          fi
-          # Remove 'v' prefix if present
-          VERSION=${VERSION#v}
-          
-          # Use the correct target for all platforms
-          bun build ./dist --compile --production --target=${{ matrix.target }} --outfile=pendant-${VERSION}-${{ matrix.platform }}${{ matrix.extension }} --minify
         shell: bash
-
-      - name: Create archive
         run: |
-          # Get version from tag or workflow input
+          # Get version from tag or workflow input and strip "v"
           if [ "${{ github.event_name }}" = "release" ]; then
             VERSION="${{ github.event.release.tag_name }}"
           else
             VERSION="${{ github.event.inputs.version }}"
           fi
-          # Remove 'v' prefix if present
           VERSION=${VERSION#v}
-          
-          # Create zip archives for all platforms
+
+          bun build ./dist \
+            --compile --production \
+            --target=${{ matrix.target }} \
+            --outfile=pendant-${VERSION}-${{ matrix.platform }}${{ matrix.extension }} \
+            --minify
+
+      - name: Zip artifact
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          VERSION=${VERSION#v}
+
           if [ "${{ runner.os }}" = "Windows" ]; then
             7z a pendant-${VERSION}-${{ matrix.platform }}.zip pendant-${VERSION}-${{ matrix.platform }}${{ matrix.extension }}
           else
             zip pendant-${VERSION}-${{ matrix.platform }}.zip pendant-${VERSION}-${{ matrix.platform }}${{ matrix.extension }}
           fi
-        shell: bash
 
       - name: Upload release assets
-        uses: softprops/action-gh-release@v2
         if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
         with:
           files: pendant-*-${{ matrix.platform }}.zip
 
-      - name: Upload artifacts (for workflow_dispatch)
+      - name: Upload artifacts (workflow_dispatch)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: pendant-${{ github.event.inputs.version }}-${{ matrix.platform }}
           path: pendant-${{ github.event.inputs.version }}-${{ matrix.platform }}.zip
           retention-days: 30
+
+  publish-npm:
+    name: Publish to npm
+    needs: build
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (release tag)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node (for npm provenance)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+          scope: "@roblox-tooling"
+
+      - name: Restore Bun global cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock*', 'package.json') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - name: Install deps
+        run: bun ci
+
+      - name: Run tests (smoke)
+        run: bun test
+
+      - name: Build
+        run: bun run build
+
+      - name: Check NPM token
+        id: check-token
+        shell: bash
+        run: |
+          if [ -n "${NPM_TOKEN}" ]; then
+            echo "has-token=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::NPM_TOKEN not set; skipping publish"
+            echo "has-token=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm
+        if: steps.check-token.outputs.has-token == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
