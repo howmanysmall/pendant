@@ -286,11 +286,11 @@ ${commits || "- Initial release"}
 
 Download the appropriate binary for your platform from the assets below:
 
-- **Windows (x64)**: \`pendant-windows-x64.zip\`
-- **macOS (Intel)**: \`pendant-macos-x64.tar.gz\`
-- **macOS (Apple Silicon)**: \`pendant-macos-arm64.tar.gz\`
-- **Linux (x64)**: \`pendant-linux-x64.tar.gz\`
-- **Linux (ARM64)**: \`pendant-linux-arm64.tar.gz\`
+- **Windows (x64)**: \`pendant-${version}-windows-x64.zip\`
+- **macOS (Intel)**: \`pendant-${version}-macos-x64.zip\`
+- **macOS (Apple Silicon)**: \`pendant-${version}-macos-arm64.zip\`
+- **Linux (x64)**: \`pendant-${version}-linux-x64.zip\`
+- **Linux (ARM64)**: \`pendant-${version}-linux-arm64.zip\`
 
 Or install via npm:
 \`\`\`bash

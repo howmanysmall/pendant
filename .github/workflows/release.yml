@@ -66,20 +66,35 @@ jobs:
 
       - name: Create standalone executable
         run: |
-          if [ "${{ matrix.platform }}" = "linux-arm64" ]; then
-            # For ARM64 Linux, we need to cross-compile
-            bun build ./dist --compile --production --target=${{ matrix.target }} --outfile=pendant-${{ matrix.platform }}${{ matrix.extension }} --minify
+          # Get version from tag or workflow input
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
           else
-            bun build ./dist --compile --production --target=bun --outfile=pendant-${{ matrix.platform }}${{ matrix.extension }} --minify
+            VERSION="${{ github.event.inputs.version }}"
           fi
+          # Remove 'v' prefix if present
+          VERSION=${VERSION#v}
+          
+          # Use the correct target for all platforms
+          bun build ./dist --compile --production --target=${{ matrix.target }} --outfile=pendant-${VERSION}-${{ matrix.platform }}${{ matrix.extension }} --minify
         shell: bash
 
       - name: Create archive
         run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            7z a pendant-${{ matrix.platform }}.zip pendant-${{ matrix.platform }}${{ matrix.extension }}
+          # Get version from tag or workflow input
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
           else
-            tar -czf pendant-${{ matrix.platform }}.tar.gz pendant-${{ matrix.platform }}${{ matrix.extension }}
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          # Remove 'v' prefix if present
+          VERSION=${VERSION#v}
+          
+          # Create zip archives for all platforms
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            7z a pendant-${VERSION}-${{ matrix.platform }}.zip pendant-${VERSION}-${{ matrix.platform }}${{ matrix.extension }}
+          else
+            zip pendant-${VERSION}-${{ matrix.platform }}.zip pendant-${VERSION}-${{ matrix.platform }}${{ matrix.extension }}
           fi
         shell: bash
 
@@ -87,12 +102,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'release'
         with:
-          files: pendant-${{ matrix.platform }}${{ matrix.extension == '.exe' && '.zip' || '.tar.gz' }}
+          files: pendant-*-${{ matrix.platform }}.zip
 
       - name: Upload artifacts (for workflow_dispatch)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: pendant-${{ matrix.platform }}
-          path: pendant-${{ matrix.platform }}${{ matrix.extension == '.exe' && '.zip' || '.tar.gz' }}
+          name: pendant-${{ github.event.inputs.version }}-${{ matrix.platform }}
+          path: pendant-${{ github.event.inputs.version }}-${{ matrix.platform }}.zip
           retention-days: 30
