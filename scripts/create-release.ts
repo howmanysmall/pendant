@@ -292,9 +292,9 @@ Download the appropriate binary for your platform from the assets below:
 - **Linux (x64)**: \`pendant-${version}-linux-x64.zip\`
 - **Linux (ARM64)**: \`pendant-${version}-linux-arm64.zip\`
 
-Or install via npm:
+Or install via Bun:
 \`\`\`bash
-npm install -g pendant
+bun install -g @roblox-tooling/pendant
 \`\`\``;
 }
 
