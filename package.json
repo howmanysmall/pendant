@@ -7,7 +7,7 @@
 		"pendant": "./dist/index.js"
 	},
 	"description": "Luau kind of sucks at linting itself. This fixes it. This is a Luau-LSP wrapper basically.",
-	"name": "pendant",
+	"name": "@roblox-tooling/pendant",
 	"module": "src/index.ts",
 	"type": "module",
 	"engines": {
@@ -30,6 +30,7 @@
 		"eslint-config-biome": "^1.9.4",
 		"eslint-plugin-react-roblox-hooks": "^5.1.0-rbx.1",
 		"jiti": "^2.4.2",
+		"knip": "^5.62.0",
 		"mitata": "^1.0.34"
 	},
 	"peerDependencies": {
@@ -62,6 +63,7 @@
 		"lint:fix": "bun run lint --fix",
 		"lint:tsc": "bun x tsc --noEmit --incremental",
 		"lint": "bun run ./scripts/lint.ts",
+		"knip": "knip",
 		"test": "bun test --coverage",
 		"test:watch": "bun test --watch",
 		"type-check": "bun x tsc --noEmit --incremental",

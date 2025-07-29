@@ -1,0 +1,14 @@
+{
+	"$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
+	"entry": [
+		"src/index.ts",
+		"scripts/changelogged.ts",
+		"scripts/create-changelog.ts",
+		"scripts/create-release.ts",
+		"scripts/lint.ts"
+	],
+	"project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,tsx}"],
+	"bun": true,
+	"biome": true,
+	"typescript": true
+}

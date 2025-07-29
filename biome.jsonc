@@ -270,6 +270,10 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": ["**/pendant-configuration.schema.json", "**/pendant.json"],
+			"formatter": { "enabled": false }
 		}
 	],
 

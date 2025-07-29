@@ -73,31 +73,34 @@ interface RuntimePathsMap {
 }
 
 /**
- * Searches for a Rojo project file in the specified directory.
+ * Searches for a Rojo project file in the specified directory and parent
+ * directories.
  *
- * @param codebaseRoot - The directory to search in.
+ * @param searchDirectory - The directory to search in.
  * @param projectFileName - The preferred project file name.
  * @returns The discovered project file path.
  * @throws {Error} If no project file is found.
  */
-async function findProjectFileAsync(codebaseRoot: string, projectFileName: string): Promise<string> {
-	const preferredPath = join(codebaseRoot, projectFileName);
+async function findProjectFileAsync(searchDirectory: string, projectFileName: string): Promise<string> {
+	const preferredPath = join(searchDirectory, projectFileName);
 
-	// Check if the preferred project file exists
+	// Check if the preferred project file exists in the search directory
 	if (await doesPathExistAsync(preferredPath)) return preferredPath;
 
 	// Search for any *.project.json file in the directory
-	const files = await getFilesAsync(codebaseRoot);
+	const files = await getFilesAsync(searchDirectory);
 	const projectFiles = files.filter((file) => basename(file).endsWith(".project.json"));
 
-	if (projectFiles.length === 0) throw new Error(`No Rojo project files found in directory: ${codebaseRoot}`);
+	if (projectFiles.length > 0) {
+		// Prioritize default.project.json if it exists
+		const defaultProject = projectFiles.find((file) => basename(file) === "default.project.json");
+		if (defaultProject) return defaultProject;
 
-	// Prioritize default.project.json if it exists
-	const defaultProject = projectFiles.find((file) => basename(file) === "default.project.json");
-	if (defaultProject) return defaultProject;
+		// Return the first project file found
+		return projectFiles[0]!;
+	}
 
-	// Return the first project file found
-	return projectFiles[0]!;
+	throw new Error(`No Rojo project files found in directory: ${searchDirectory}`);
 }
 
 /**
@@ -363,7 +366,7 @@ export default async function smartInitializeAsync({
 	}
 
 	// Step 1: Locate and load the Rojo project file
-	const projectFilePath = await findProjectFileAsync(codebaseRoot, projectFile);
+	const projectFilePath = await findProjectFileAsync(directoryPath, projectFile);
 	const discoveredProjectFileName = basename(projectFilePath);
 	if (verbose) logger.info(`Found Rojo project file: ${projectFilePath}`);
 
@@ -396,13 +399,13 @@ export default async function smartInitializeAsync({
 			shared: runtimePaths.shared,
 			...(runtimePaths.testing && runtimePaths.testing.length > 0 ? { testing: runtimePaths.testing } : {}),
 		},
-		ignoreGlobs: ["Packages/**", "ServerPackages/**", "DevPackages/**", "Vendor/**"],
+		ignoreGlobs: ["Packages/**", "ServerPackages/**", "DevPackages/**", "Vendor/**", "VendorServer/**"],
 		outputFileName,
 		projectFile: discoveredProjectFileName,
 	};
 
 	// Step 5: Write the configuration file to disk
-	const configurationPath = join(codebaseRoot, "pendant.json");
+	const configurationPath = join(directoryPath, "pendant.json");
 	const formattedJson = prettyJsonStringify(configuration, {
 		indent: "\t",
 		indentLevel: 0,

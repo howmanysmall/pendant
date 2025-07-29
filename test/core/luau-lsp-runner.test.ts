@@ -109,7 +109,8 @@ describe("luau-lsp-runner", () => {
 				const command = await (runner as unknown as PrivateLuauLspRunner).buildCommandAsync(options);
 
 				// Should not contain any --ignore flags
-				const ignoreFlags = command.filter(arg => arg.startsWith("--ignore="));
+				const ignoreFlags = command.filter((argument) => argument.startsWith("--ignore="));
+
 				expect(ignoreFlags).toHaveLength(0);
 			});
 
