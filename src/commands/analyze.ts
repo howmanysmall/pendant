@@ -148,14 +148,13 @@ export const analyzeCommand = defineCommand({
 
 			// Ensure prerequisites (globalTypes.d.luau)
 			commandSpinner.start(colors.blue("Checking prerequisites..."));
-			await coordinator.ensurePrerequisitesAsync(grab);
+			await coordinator.ensurePrerequisitesAsync(grab, verbose);
 			commandSpinner.stop();
 
 			// Build ignore patterns
 			const ignorePatterns = configuration.ignoreGlobs ?? [];
-			if (verbose && ignorePatterns.length > 0) {
+			if (verbose && ignorePatterns.length > 0)
 				logger.info(`Added ${ignorePatterns.length} problematic file patterns to ignore list`);
-			}
 
 			const analysisOptions = {
 				ignorePatterns,

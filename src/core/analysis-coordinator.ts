@@ -81,13 +81,14 @@ export default class AnalysisCoordinator {
 	 *
 	 * @param grab - If true, forces a re-download of `globalTypes.d.luau` even
 	 *   if it exists.
+	 * @param verbose - If true, enables verbose logging during the download.
 	 * @returns A Promise that resolves when the prerequisites are ensured.
 	 */
-	public async ensurePrerequisitesAsync(grab = false): Promise<void> {
+	public async ensurePrerequisitesAsync(grab = false, verbose = false): Promise<void> {
 		const globalTypesPath = join(this.cwd, "globalTypes.d.luau");
 		const globalTypesFile = Bun.file(globalTypesPath);
 
-		if (grab || !(await globalTypesFile.exists())) await downloadGlobalTypesAsync(globalTypesPath);
+		if (grab || !(await globalTypesFile.exists())) await downloadGlobalTypesAsync(globalTypesPath, verbose);
 	}
 
 	/**

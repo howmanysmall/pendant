@@ -150,15 +150,16 @@ export class LuauLspRunner {
  *
  * @param targetPath - Path to save the downloaded file (default:
  *   "globalTypes.d.luau").
+ * @param verbose - Whether to have verbose logging for fetch.
  * @returns Promise resolving when download is complete.
  * @throws Error if download fails.
  */
-export async function downloadGlobalTypesAsync(targetPath = "globalTypes.d.luau"): Promise<void> {
+export async function downloadGlobalTypesAsync(targetPath = "globalTypes.d.luau", verbose = false): Promise<void> {
 	const url = "https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau";
 
 	try {
 		logger.info("Downloading globalTypes.d.luau...");
-		const response = await Bun.fetch(url);
+		const response = await Bun.fetch(url, { verbose });
 
 		if (!response.ok) throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
 
