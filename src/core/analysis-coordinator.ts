@@ -1,10 +1,12 @@
 import { watch } from "chokidar";
+import downloadGlobalTypesAsync from "functions/download-global-types-async";
 import { createNamespaceLogger } from "logging/logger-utilities";
+import GitHubDownloadType from "meta/github-download-type";
 import type RuntimeContext from "meta/runtime-context";
 import { join } from "node:path";
 import { bunPerformanceNow } from "utilities/performance-utilities";
 
-import { downloadGlobalTypesAsync, generateSourcemapAsync, LuauLspRunner } from "./luau-lsp-runner";
+import { generateSourcemapAsync, LuauLspRunner } from "./luau-lsp-runner";
 import {
 	type ContextAnalysisResult,
 	formatAnalysisResults,
@@ -79,16 +81,37 @@ export default class AnalysisCoordinator {
 	 * existence of `globalTypes.d.luau`. Downloads `globalTypes.d.luau` if it's
 	 * missing or if `grab` is true.
 	 *
+	 * @param gitHubDownloadType - The type of GitHub download to use for
+	 *   downloading `globalTypes.d.luau`.
 	 * @param grab - If true, forces a re-download of `globalTypes.d.luau` even
 	 *   if it exists.
 	 * @param verbose - If true, enables verbose logging during the download.
 	 * @returns A Promise that resolves when the prerequisites are ensured.
 	 */
-	public async ensurePrerequisitesAsync(grab = false, verbose = false): Promise<void> {
+	public async ensurePrerequisitesAsync(
+		gitHubDownloadType: GitHubDownloadType,
+		grab = false,
+		verbose = false,
+	): Promise<void> {
 		const globalTypesPath = join(this.cwd, "globalTypes.d.luau");
 		const globalTypesFile = Bun.file(globalTypesPath);
 
-		if (grab || !(await globalTypesFile.exists())) await downloadGlobalTypesAsync(globalTypesPath, verbose);
+		if (grab || !(await globalTypesFile.exists())) {
+			try {
+				await downloadGlobalTypesAsync(gitHubDownloadType, globalTypesPath, verbose);
+			} catch {
+				try {
+					const otherType =
+						gitHubDownloadType === GitHubDownloadType.Fetch
+							? GitHubDownloadType.OctokitCore
+							: GitHubDownloadType.Fetch;
+					await downloadGlobalTypesAsync(otherType, globalTypesPath, verbose);
+				} catch (error) {
+					logger.error(`Failed to download globalTypes.d.luau: ${error}`);
+					throw new Error("Failed to ensure prerequisites: globalTypes.d.luau could not be downloaded.");
+				}
+			}
+		}
 	}
 
 	/**

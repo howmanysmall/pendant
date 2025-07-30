@@ -146,33 +146,6 @@ export class LuauLspRunner {
 }
 
 /**
- * Downloads globalTypes.d.luau from the official repository.
- *
- * @param targetPath - Path to save the downloaded file (default:
- *   "globalTypes.d.luau").
- * @param verbose - Whether to have verbose logging for fetch.
- * @returns Promise resolving when download is complete.
- * @throws Error if download fails.
- */
-export async function downloadGlobalTypesAsync(targetPath = "globalTypes.d.luau", verbose = false): Promise<void> {
-	const url = "https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau";
-
-	try {
-		logger.info("Downloading globalTypes.d.luau...");
-		const response = await Bun.fetch(url, { verbose });
-
-		if (!response.ok) throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
-
-		const content = await response.text();
-		await Bun.write(targetPath, content);
-		logger.info("Successfully downloaded globalTypes.d.luau");
-	} catch (error) {
-		logger.error(`Failed to download globalTypes.d.luau: ${error}`);
-		throw error;
-	}
-}
-
-/**
  * Generates a sourcemap using Rojo.
  *
  * @param projectFile - The path to the Rojo project file (e.g.,

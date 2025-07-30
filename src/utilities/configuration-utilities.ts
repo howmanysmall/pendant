@@ -1,6 +1,7 @@
 import logger from "logging/logger";
 import type ConfigurationFileType from "meta/configuration-file-type";
 import ConfigurationFileTypeMeta, { type ConfigurationFileTypeMetadata } from "meta/configuration-file-type-meta";
+import GitHubDownloadType from "meta/github-download-type";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { ContentType, fromPathLike, readFileAsync } from "utilities/file-system-utilities";
@@ -15,6 +16,19 @@ const PREFIX_DOT_REGEX = /^\./;
  * to your liking.
  */
 export const isPendantConfiguration = readonlyObject({
+	/**
+	 * The type of fetch to use for downloading files from GitHub. Defaults to
+	 * `fetch`.
+	 */
+	fetchType: z
+		.optional(
+			z._default(z.enum([GitHubDownloadType.Fetch, GitHubDownloadType.OctokitCore]), GitHubDownloadType.Fetch),
+		)
+		.register(z.globalRegistry, {
+			deprecated: false,
+			description: "The type of fetch to use for downloading files from GitHub. Defaults to `fetch`.",
+		}),
+
 	/**
 	 * How you configure the contexts for files. These are Roblox service class
 	 * names.

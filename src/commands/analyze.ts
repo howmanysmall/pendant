@@ -2,6 +2,7 @@ import { defineCommand, option } from "@bunli/core";
 
 import AnalysisCoordinator from "core/analysis-coordinator";
 import { createNamespaceLogger } from "logging/logger-utilities";
+import GitHubDownloadType from "meta/github-download-type";
 import type RuntimeContext from "meta/runtime-context";
 import { relative } from "node:path";
 import {
@@ -147,7 +148,11 @@ export const analyzeCommand = defineCommand({
 
 			// Ensure prerequisites (globalTypes.d.luau)
 			commandSpinner.start(colors.blue("Checking prerequisites..."));
-			await coordinator.ensurePrerequisitesAsync(grab, verbose);
+			await coordinator.ensurePrerequisitesAsync(
+				configuration.fetchType ?? GitHubDownloadType.Fetch,
+				grab,
+				verbose,
+			);
 			commandSpinner.stop();
 
 			// Build ignore patterns
