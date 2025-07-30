@@ -3,7 +3,7 @@ import type RobloxService from "meta/roblox-service";
 import RobloxServiceMeta from "meta/roblox-service-meta";
 import RuntimeContext from "meta/runtime-context";
 import RuntimeContextMeta from "meta/runtime-context-meta";
-import { basename, matchesGlob, resolve } from "node:path";
+import { basename, matchesGlob } from "node:path";
 import { ContentType, fromPathLike, readFileAsync } from "utilities/file-system-utilities";
 
 import type { PendantConfiguration } from "./configuration-utilities";
@@ -326,7 +326,7 @@ export function collectPathsFromRuntimeMap(runtimeMap: RuntimeEntryMap): Runtime
 		}
 
 		const array = paths[context];
-		for (const entry of entries) for (const path of extractPathsFromEntry(entry)) array.push(resolve(path));
+		for (const entry of entries) for (const path of extractPathsFromEntry(entry)) array.push(path);
 	}
 
 	return paths;

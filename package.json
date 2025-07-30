@@ -22,6 +22,7 @@
 		"@mitata/counters": "^0.0.8",
 		"@octokit/rest": "^22.0.0",
 		"@types/bun": "latest",
+		"@types/micromatch": "^4.0.9",
 		"bunli": "latest",
 		"eslint-config-biome": "^1.9.4",
 		"eslint-plugin-react-roblox-hooks": "^5.1.0-rbx.1",
@@ -41,12 +42,13 @@
 		"chokidar": "^4.0.3",
 		"confbox": "^0.2.2",
 		"env-paths": "^3.0.0",
+		"micromatch": "^4.0.8",
 		"pretty-ms": "^9.2.0",
 		"rimraf": "^6.0.1",
-		"winston": "^3.17.0",
 		"winston-daily-rotate-file": "^5.0.0",
-		"zod": "^4.0.5",
-		"zod-validation-error": "^4.0.0-beta.2"
+		"winston": "^3.17.0",
+		"zod-validation-error": "^4.0.0-beta.2",
+		"zod": "^4.0.5"
 	},
 	"scripts": {
 		"build": "bunli build",
