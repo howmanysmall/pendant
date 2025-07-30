@@ -79,19 +79,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
-      # Optional: cache node_modules on Windows to mitigate slow installs
+      # Cache node_modules on Windows to mitigate slow installs
       - name: Cache node_modules (Windows only)
         if: runner.os == 'Windows'
         uses: actions/cache@v4
         with:
           path: |
             node_modules
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/bun.lock*', 'package.json') }}
+            ~/.bun/install/cache
+          key: ${{ runner.os }}-full-${{ hashFiles('**/bun.lock*', 'package.json') }}
           restore-keys: |
-            ${{ runner.os }}-modules-
+            ${{ runner.os }}-full-
 
       - name: Install dependencies (frozen lockfile)
-        run: bun ci
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            # Skip install if node_modules cache hit
+            if [ -d "node_modules" ] && [ -f "node_modules/.cache-marker" ]; then
+              echo "Using cached node_modules"
+            else
+              bun install --frozen-lockfile --ignore-scripts --backend=copyfile
+              touch node_modules/.cache-marker
+            fi
+          else
+            bun ci
+          fi
+        shell: bash
 
       - name: Run tests
         run: bun test
