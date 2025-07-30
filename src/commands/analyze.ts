@@ -101,6 +101,14 @@ async function getConfigurationAsync(configurationFile?: string): Promise<Pendan
 	return getFirstConfigurationAsync();
 }
 
+function determineFetchType(
+	flag: GitHubDownloadType | undefined,
+	configuration: GitHubDownloadType | undefined,
+): GitHubDownloadType {
+	if ("GITHUB_TOKEN" in Bun.env) return GitHubDownloadType.OctokitCore;
+	return flag ?? configuration ?? GitHubDownloadType.Fetch;
+}
+
 export const analyzeCommand = defineCommand({
 	name: "analyze",
 	description: "Analyzes the project using luau-lsp with runtime context awareness.",
@@ -117,6 +125,7 @@ export const analyzeCommand = defineCommand({
 			// Resolve project settings
 			const outputFile = flags.outputFile ?? configuration.outputFileName ?? "problematic";
 			const projectFile = flags.rojoProject ?? configuration.projectFile ?? "default.project.json";
+			const fetchType = determineFetchType(flags.fetchType, configuration.fetchType);
 
 			if (verbose) {
 				logger.info(`Configuration: ${Bun.inspect(configuration, { colors: true, compact: true })}`);
@@ -148,11 +157,7 @@ export const analyzeCommand = defineCommand({
 
 			// Ensure prerequisites (globalTypes.d.luau)
 			commandSpinner.start(colors.blue("Checking prerequisites..."));
-			await coordinator.ensurePrerequisitesAsync(
-				configuration.fetchType ?? GitHubDownloadType.Fetch,
-				grab,
-				verbose,
-			);
+			await coordinator.ensurePrerequisitesAsync(fetchType, grab, verbose);
 			commandSpinner.stop();
 
 			// Build ignore patterns
@@ -189,6 +194,10 @@ export const analyzeCommand = defineCommand({
 		configurationFile: option(z.optional(z.string()), {
 			description: "The configuration file to use for the analysis.",
 			short: "c",
+		}),
+		fetchType: option(z.optional(z.enum([GitHubDownloadType.Fetch, GitHubDownloadType.OctokitCore])), {
+			description: "Specifies the method for downloading files from GitHub.",
+			short: "f",
 		}),
 		grab: option(z._default(z.boolean(), false), {
 			description: "Grabs the latest globalTypes.d.luau file.",
