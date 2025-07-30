@@ -1,9 +1,9 @@
 import chalk from "chalk";
-import ignore from "ignore";
 import type RuntimeContext from "meta/runtime-context";
 import RuntimeContextMeta from "meta/runtime-context-meta";
 import prettyMilliseconds from "pretty-ms";
 import { pluralize } from "utilities/english-utilities";
+import { createSimpleIgnoreFilter } from "utilities/gitignore-utilities";
 
 const PREFIX_SLASH_REGEX = /^\//;
 const SPECIAL_CHARACTER_REGEX = /[.*+?^${}()|[\]\\]/g;
@@ -151,7 +151,7 @@ export function parseLuauLspOutput(
 
 	// Filter out issues that match ignore patterns
 	if (ignorePatterns && ignorePatterns.length > 0) {
-		const ignoreFilter = ignore();
+		const ignoreFilter = createSimpleIgnoreFilter();
 		ignoreFilter.add(ignorePatterns);
 		return issues.filter((issue) => !ignoreFilter.ignores(issue.filePath));
 	}

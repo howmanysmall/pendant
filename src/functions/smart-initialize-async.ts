@@ -4,7 +4,7 @@ import RuntimeContext from "meta/runtime-context";
 import { basename, join } from "node:path";
 import type { PendantConfiguration } from "utilities/configuration-utilities";
 import { doesPathExistAsync, fromPathLike, getFilesAsync, writeFileAsync } from "utilities/file-system-utilities";
-import { createIgnoreFilterAsync } from "utilities/gitignore-utilities";
+import { createIgnoreFilterAsync, type IgnoreFilter } from "utilities/gitignore-utilities";
 import { prettyJsonStringify } from "utilities/json-utilities";
 import { getProjectFromFileAsync, type RojoProject, type RojoTreeEntry } from "utilities/rojo-project-utilities";
 
@@ -193,7 +193,7 @@ function consolidateVendorPaths(paths: Array<string>): Array<string> {
  *   patterns.
  * @returns A map of runtime contexts to their associated file paths.
  */
-function analyzeRojoProject(project: RojoProject, ignoreFilter?: ReturnType<typeof import("ignore")>): RuntimePathsMap {
+function analyzeRojoProject(project: RojoProject, ignoreFilter?: IgnoreFilter): RuntimePathsMap {
 	const paths: RuntimePathsMap = {
 		client: [],
 		server: [],
@@ -316,7 +316,7 @@ function analyzeRojoProject(project: RojoProject, ignoreFilter?: ReturnType<type
  * @param ignoreFilter - The ignore filter instance.
  * @returns True if the path should be ignored.
  */
-function isIgnoredPath(path: string, ignoreFilter: ReturnType<typeof import("ignore")>): boolean {
+function isIgnoredPath(path: string, ignoreFilter: IgnoreFilter): boolean {
 	// Remove /** suffix to get the base path for testing
 	const basePath = path.replace(GLOB_SUFFIX_PATTERN, "");
 

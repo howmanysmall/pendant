@@ -1,7 +1,6 @@
 import { defineCommand, option } from "@bunli/core";
 
 import AnalysisCoordinator from "core/analysis-coordinator";
-import ignore from "ignore";
 import { createNamespaceLogger } from "logging/logger-utilities";
 import type RuntimeContext from "meta/runtime-context";
 import { relative } from "node:path";
@@ -10,7 +9,7 @@ import {
 	getPendantConfigurationAsync,
 	type PendantConfiguration,
 } from "utilities/configuration-utilities";
-import { createIgnoreFilterAsync } from "utilities/gitignore-utilities";
+import { createIgnoreFilterAsync, createSimpleIgnoreFilter, type IgnoreFilter } from "utilities/gitignore-utilities";
 import {
 	collectFromConfigurationAsync,
 	collectPathsFromRuntimeMap,
@@ -30,7 +29,7 @@ const GLOB_SUFFIX_PATTERN = /\/\*\*$/;
  * @param ignoreFilter - The ignore filter instance.
  * @returns True if the path should be ignored.
  */
-function isIgnoredPath(path: string, ignoreFilter: ReturnType<typeof import("ignore")>): boolean {
+function isIgnoredPath(path: string, ignoreFilter: IgnoreFilter): boolean {
 	// Remove /** suffix to get the base path for testing
 	const basePath = path.replace(GLOB_SUFFIX_PATTERN, "");
 
@@ -53,14 +52,14 @@ function isIgnoredPath(path: string, ignoreFilter: ReturnType<typeof import("ign
  */
 function filterPathsWithIgnorePatterns(
 	paths: RuntimePathMap,
-	ignoreFilter: ReturnType<typeof import("ignore")>,
+	ignoreFilter: IgnoreFilter,
 	ignoreGlobs: ReadonlyArray<string>,
 	workingDirectory: string,
 ): RuntimePathMap {
 	const filtered: RuntimePathMap = {} as RuntimePathMap;
 
 	// Create a combined ignore filter that includes both gitignore and ignoreGlobs
-	const combinedIgnoreFilter = ignore();
+	const combinedIgnoreFilter = createSimpleIgnoreFilter();
 	combinedIgnoreFilter.add(ignoreGlobs);
 
 	for (const [context, pathList] of Object.entries(paths) as Array<[RuntimeContext, Array<string>]>) {
