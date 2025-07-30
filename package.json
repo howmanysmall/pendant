@@ -72,7 +72,7 @@
 		"analyze:missing": "cd code/codebase-missing && bun run ../../src/index.ts analyze && cd -",
 		"analyze:missing:verbose": "cd code/codebase-missing && bun run ../../src/index.ts analyze -V && cd -"
 	},
-	"version": "0.2.3",
+	"version": "0.2.4",
 	"author": {
 		"name": "HowManySmall"
 	},
