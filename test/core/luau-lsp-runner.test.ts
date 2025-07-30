@@ -311,6 +311,7 @@ describe("luau-lsp-runner", () => {
 
 			expect(mockFetch).toHaveBeenCalledWith(
 				"https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau",
+				{ verbose: false },
 			);
 			expect(mockWrite).toHaveBeenCalledWith(targetPath, "-- Global types content");
 
