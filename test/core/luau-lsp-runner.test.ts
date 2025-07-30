@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import {
-	downloadGlobalTypesAsync,
 	generateSourcemapAsync,
 	type LuauLspAnalysisOptions,
 	LuauLspRunner,
 	type PrivateLuauLspRunner,
 } from "core/luau-lsp-runner";
+import downloadGlobalTypesAsync from "functions/download-global-types-async";
+import GitHubDownloadType from "meta/github-download-type";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -307,7 +308,7 @@ describe("luau-lsp-runner", () => {
 			const mockWrite = spyOn(Bun, "write").mockResolvedValue(100);
 
 			const targetPath = join(temporaryDirectory, GLOBAL_TYPES_FILE);
-			await downloadGlobalTypesAsync(targetPath);
+			await downloadGlobalTypesAsync(GitHubDownloadType.Fetch, targetPath);
 
 			expect(mockFetch).toHaveBeenCalledWith(
 				"https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau",
@@ -330,7 +331,9 @@ describe("luau-lsp-runner", () => {
 			const targetPath = join(temporaryDirectory, GLOBAL_TYPES_FILE);
 
 			// eslint-disable-next-line ts/await-thenable, ts/no-confusing-void-expression -- required
-			await expect(downloadGlobalTypesAsync(targetPath)).rejects.toThrow("Failed to download: 404 Not Found");
+			await expect(downloadGlobalTypesAsync(GitHubDownloadType.Fetch, targetPath)).rejects.toThrow(
+				"Failed to download: 404 Not Found",
+			);
 
 			mockFetch.mockRestore();
 		});
@@ -341,7 +344,9 @@ describe("luau-lsp-runner", () => {
 			const targetPath = join(temporaryDirectory, GLOBAL_TYPES_FILE);
 
 			// eslint-disable-next-line ts/await-thenable, ts/no-confusing-void-expression -- required
-			await expect(downloadGlobalTypesAsync(targetPath)).rejects.toThrow("Network error");
+			await expect(downloadGlobalTypesAsync(GitHubDownloadType.Fetch, targetPath)).rejects.toThrow(
+				"Network error",
+			);
 
 			mockFetch.mockRestore();
 		});
