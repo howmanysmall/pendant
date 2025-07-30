@@ -96,15 +96,6 @@ jobs:
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock*', 'package.json') }}
           restore-keys: ${{ runner.os }}-bun-
 
-      # Optional: Windows-only node_modules cache to speed up install
-      - name: Cache node_modules (Windows only)
-        if: runner.os == 'Windows'
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/bun.lock*', 'package.json') }}
-          restore-keys: ${{ runner.os }}-modules-
-
       - name: Install dependencies (frozen lockfile)
         run: bun ci
 
