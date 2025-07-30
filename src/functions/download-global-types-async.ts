@@ -2,7 +2,6 @@ import { Octokit } from "@octokit/core";
 
 import { createNamespaceLogger } from "logging/logger-utilities";
 import GitHubDownloadType from "meta/github-download-type";
-import { resolve } from "node:path";
 import { z } from "zod/mini";
 import { fromError } from "zod-validation-error";
 
@@ -54,10 +53,9 @@ async function octokitGlobalTypesAsync(targetPath: string, verbose: boolean): Pr
 		if (!result.success) throw fromError(result.error);
 
 		const content = Buffer.from(result.data.content, "base64").toString("utf-8");
-		const fullPath = resolve(process.cwd(), targetPath);
 
-		await Bun.write(fullPath, content);
-		if (verbose) logger.info(`Successfully downloaded globalTypes.d.luau to ${fullPath}`);
+		await Bun.write(targetPath, content);
+		if (verbose) logger.info(`Successfully downloaded globalTypes.d.luau to ${targetPath}`);
 	} catch (error: unknown) {
 		logger.error(`Failed to download globalTypes.d.luau using Octokit: ${error}`);
 		throw error;

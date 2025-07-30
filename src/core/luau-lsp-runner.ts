@@ -44,10 +44,6 @@ export interface PrivateLuauLspRunner {
 	buildCommandAsync(options: LuauLspAnalysisOptions): Promise<ReadonlyArray<string>>;
 }
 
-function isString(value: string | undefined): value is string {
-	return value !== undefined;
-}
-
 /** Core runner for luau-lsp analyze command. */
 export class LuauLspRunner {
 	/**
@@ -121,20 +117,9 @@ export class LuauLspRunner {
 		const baseConfigPath = options.baseConfigPath ?? ".luaurc";
 		if (await Bun.file(`${this.cwd}/${baseConfigPath}`).exists()) command.push(`--base-luaurc=${baseConfigPath}`);
 
-		// Combine gitignore patterns with custom ignore patterns
-		const gitignorePatterns = await parseGitignoreAsync(`${this.cwd}/.gitignore`);
-		const patterns = [...gitignorePatterns, ...(options.ignorePatterns ?? [])];
-
-		const results = await Promise.all(
-			patterns.map(async (pattern) => {
-				const iterator = new Bun.Glob(pattern).scan({ cwd: this.cwd });
-				const { done } = await iterator.next();
-				return done ? undefined : pattern;
-			}),
-		);
-
 		// Add all ignore patterns
-		for (const pattern of results.filter(isString)) command.push(`--ignore=${addQuoted(removeQuotes(pattern))}`);
+		for (const pattern of await parseGitignoreAsync(`${this.cwd}/.gitignore`))
+			command.push(`--ignore=${addQuoted(removeQuotes(pattern))}`);
 
 		// Add target paths
 		command.push(...options.paths);
