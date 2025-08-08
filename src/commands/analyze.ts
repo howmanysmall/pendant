@@ -4,13 +4,12 @@ import AnalysisCoordinator from "core/analysis-coordinator";
 import { createNamespaceLogger } from "logging/logger-utilities";
 import GitHubDownloadType from "meta/github-download-type";
 import type RuntimeContext from "meta/runtime-context";
-import { relative } from "node:path";
+import micromatch from "micromatch";
 import {
 	getFirstConfigurationAsync,
 	getPendantConfigurationAsync,
 	type PendantConfiguration,
 } from "utilities/configuration-utilities";
-import { createIgnoreFilterAsync, createSimpleIgnoreFilter, type IgnoreFilter } from "utilities/gitignore-utilities";
 import {
 	collectFromConfigurationAsync,
 	collectPathsFromRuntimeMap,
@@ -21,73 +20,22 @@ import { z } from "zod/v4-mini";
 const logger = createNamespaceLogger("analyze");
 
 // Regex patterns for path consolidation
-const GLOB_SUFFIX_PATTERN = /\/\*\*$/;
 
-/**
- * Checks if a path should be ignored based on gitignore patterns.
- *
- * @param path - The path to check.
- * @param ignoreFilter - The ignore filter instance.
- * @returns True if the path should be ignored.
- */
-function isIgnoredPath(path: string, ignoreFilter: IgnoreFilter): boolean {
-	// Remove /** suffix to get the base path for testing
-	const basePath = path.replace(GLOB_SUFFIX_PATTERN, "");
-
-	// Test both as directory and file since ignore is strict about this
-	// For directory patterns like "/Packages/", we need to test "Packages" as a directory
-	const asDirectory = `${basePath}/`;
-
-	// Test if the path should be ignored (try both file and directory formats)
-	return ignoreFilter.ignores(basePath) || ignoreFilter.ignores(asDirectory);
-}
-
-/**
- * Filters paths using gitignore and configuration ignore patterns.
- *
- * @param paths - The runtime paths map to filter.
- * @param ignoreFilter - The gitignore filter function.
- * @param ignoreGlobs - Additional glob patterns to ignore from configuration.
- * @param workingDirectory - The working directory to make paths relative to.
- * @returns Filtered runtime paths map.
- */
 function filterPathsWithIgnorePatterns(
 	paths: RuntimePathMap,
-	ignoreFilter: IgnoreFilter,
 	ignoreGlobs: ReadonlyArray<string>,
 	workingDirectory: string,
 ): RuntimePathMap {
 	const filtered: RuntimePathMap = {} as RuntimePathMap;
 
-	// Create a combined ignore filter that includes both gitignore and ignoreGlobs
-	const combinedIgnoreFilter = createSimpleIgnoreFilter();
-	combinedIgnoreFilter.add(ignoreGlobs);
-
-	for (const [context, pathList] of Object.entries(paths) as Array<[RuntimeContext, Array<string>]>) {
-		filtered[context] = pathList.filter((path) => {
-			const relativePath = relative(workingDirectory, path);
-
-			// Also try extracting just the directory structure from the path
-			// For paths like /Users/.../drawing/VendorServer/... we want VendorServer/...
-			const pathSegments = path.split("/");
-			const popped = workingDirectory.split("/").pop();
-			if (!popped) return false; // If no popped segment, skip
-
-			const projectDirectoryIndex = pathSegments.indexOf(popped);
-			const relativeFromProject =
-				projectDirectoryIndex >= 0 && projectDirectoryIndex < pathSegments.length - 1
-					? pathSegments.slice(projectDirectoryIndex + 1).join("/")
-					: relativePath;
-
-			// Check against gitignore patterns
-			if (isIgnoredPath(relativePath, ignoreFilter)) return false;
-			if (isIgnoredPath(relativeFromProject, ignoreFilter)) return false;
-
-			// Check against ignoreGlobs patterns
-			if (combinedIgnoreFilter.ignores(relativePath)) return false;
-			return !combinedIgnoreFilter.ignores(relativeFromProject);
-		});
-	}
+	for (const [context, pathList] of Object.entries(paths) as Array<[RuntimeContext, Array<string>]>)
+		filtered[context] = micromatch.not(
+			pathList,
+			ignoreGlobs.map((pattern) => `**/${pattern}`),
+			{
+				cwd: workingDirectory,
+			},
+		);
 
 	return filtered;
 }
@@ -99,6 +47,14 @@ async function getConfigurationAsync(configurationFile?: string): Promise<Pendan
 	}
 
 	return getFirstConfigurationAsync();
+}
+
+function determineFetchType(
+	flag: GitHubDownloadType | undefined,
+	configuration: GitHubDownloadType | undefined,
+): GitHubDownloadType {
+	if ("GITHUB_TOKEN" in Bun.env) return GitHubDownloadType.OctokitCore;
+	return flag ?? configuration ?? GitHubDownloadType.Fetch;
 }
 
 export const analyzeCommand = defineCommand({
@@ -117,6 +73,7 @@ export const analyzeCommand = defineCommand({
 			// Resolve project settings
 			const outputFile = flags.outputFile ?? configuration.outputFileName ?? "problematic";
 			const projectFile = flags.rojoProject ?? configuration.projectFile ?? "default.project.json";
+			const fetchType = determineFetchType(flags.fetchType, configuration.fetchType);
 
 			if (verbose) {
 				logger.info(`Configuration: ${Bun.inspect(configuration, { colors: true, compact: true })}`);
@@ -129,12 +86,13 @@ export const analyzeCommand = defineCommand({
 
 			const [runtimeMap, rojoProject] = await collectFromConfigurationAsync(configuration, projectFile);
 
-			let paths = collectPathsFromRuntimeMap(runtimeMap);
-
 			// Apply gitignore and ignoreGlobs filtering
-			const ignoreFilter = await createIgnoreFilterAsync();
 			const ignoreGlobs = configuration.ignoreGlobs ?? [];
-			paths = filterPathsWithIgnorePatterns(paths, ignoreFilter, ignoreGlobs, process.cwd());
+			const paths = filterPathsWithIgnorePatterns(
+				collectPathsFromRuntimeMap(runtimeMap),
+				ignoreGlobs,
+				process.cwd(),
+			);
 
 			commandSpinner.stop();
 
@@ -148,11 +106,7 @@ export const analyzeCommand = defineCommand({
 
 			// Ensure prerequisites (globalTypes.d.luau)
 			commandSpinner.start(colors.blue("Checking prerequisites..."));
-			await coordinator.ensurePrerequisitesAsync(
-				configuration.fetchType ?? GitHubDownloadType.Fetch,
-				grab,
-				verbose,
-			);
+			await coordinator.ensurePrerequisitesAsync(fetchType, grab, verbose);
 			commandSpinner.stop();
 
 			// Build ignore patterns
@@ -189,6 +143,10 @@ export const analyzeCommand = defineCommand({
 		configurationFile: option(z.optional(z.string()), {
 			description: "The configuration file to use for the analysis.",
 			short: "c",
+		}),
+		fetchType: option(z.optional(z.enum([GitHubDownloadType.Fetch, GitHubDownloadType.OctokitCore])), {
+			description: "Specifies the method for downloading files from GitHub.",
+			short: "f",
 		}),
 		grab: option(z._default(z.boolean(), false), {
 			description: "Grabs the latest globalTypes.d.luau file.",
