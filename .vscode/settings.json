@@ -3,6 +3,14 @@
 		"editor.defaultFormatter": "dbaeumer.vscode-eslint",
 		"editor.formatOnSave": true
 	},
+	"[github-actions-workflow]": {
+		"editor.defaultFormatter": "redhat.vscode-yaml",
+		"editor.formatOnSave": true
+	},
+	"[gitignore]": {
+		"editor.defaultFormatter": "dbaeumer.vscode-eslint",
+		"editor.formatOnSave": true
+	},
 	"[json]": {
 		"editor.defaultFormatter": "biomejs.biome",
 		"editor.formatOnSave": true,
@@ -15,16 +23,17 @@
 		"editor.quickSuggestions": { "strings": true },
 		"editor.suggest.insertMode": "replace"
 	},
+	"[snippets]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.quickSuggestions": { "strings": true },
+		"editor.suggest.insertMode": "replace"
+	},
 	"[typescript]": {
 		"editor.defaultFormatter": "dbaeumer.vscode-eslint",
 		"editor.formatOnSave": true
 	},
 	"[typescriptreact]": {
 		"editor.defaultFormatter": "dbaeumer.vscode-eslint",
-		"editor.formatOnSave": true
-	},
-	"[github-actions-workflow]": {
-		"editor.defaultFormatter": "redhat.vscode-yaml",
 		"editor.formatOnSave": true
 	},
 	"[yaml]": {
@@ -38,12 +47,14 @@
 		"source.biome": "explicit",
 		"source.fixAll.biome": "explicit",
 		"source.fixAll.eslint": "explicit",
+		"source.organizeImports": "never",
 		"source.removeUnusedImports": "explicit"
 	},
 	"editor.formatOnSave": true,
 
 	"eslint.format.enable": true,
 	"eslint.run": "onType",
+	"eslint.validate": ["typescript", "typescriptreact", "json", "jsonc", "yaml", "toml", "gitignore"],
 
 	"files.eol": "\n",
 	"typescript.inlayHints.functionLikeReturnTypes.enabled": true
