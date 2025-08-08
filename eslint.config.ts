@@ -1,35 +1,51 @@
 // @ts-check
 
-import style, { GLOB_JSON, GLOB_JSONC } from "@isentinel/eslint-config";
+import style, { GLOB_JSON, GLOB_JSONC, GLOB_MARKDOWN_CODE } from "@isentinel/eslint-config";
+
+import perfectionist from "eslint-plugin-perfectionist";
 
 export default style(
 	{
 		formatters: {
+			css: true,
+			graphql: true,
+			html: true,
+			lua: false,
 			markdown: true,
 			prettierOptions: {
 				arrowParens: "always",
+				bracketSameLine: false,
+				bracketSpacing: true,
+				checkIgnorePragma: false,
+				embeddedLanguageFormatting: "auto",
 				endOfLine: "auto",
+				experimentalOperatorPosition: "end",
+				experimentalTernaries: false,
+				filepath: undefined,
+				htmlWhitespaceSensitivity: "css",
+				insertPragma: false,
+				jsxSingleQuote: false,
+				objectWrap: "preserve",
 				printWidth: 120,
+				proseWrap: "preserve",
 				quoteProps: "as-needed",
+				requirePragma: false,
 				semi: true,
 				singleQuote: false,
 				tabWidth: 4,
 				trailingComma: "all",
 				useTabs: true,
+				vueIndentScriptAndStyle: false,
 			},
 		},
-		ignores: [".lune/**", "do-not-sync-ever/**", "./data/**", "node_modules/**", "*.yml", "*.yaml"],
+		gitignore: false,
+		ignores: [".lune/**", "do-not-sync-ever/**", "./data/**", "node_modules/**", GLOB_MARKDOWN_CODE],
+		markdown: true,
 		perfectionist: {
-			customClassGroups: [
-				"onInit",
-				"onStart",
-				"onProfileUpdated",
-				// "onPlayerJoin",
-				// "onPlayerLeave",
-				"onRender",
-				"onPhysics",
-				"onTick",
-			],
+			customClassGroups: [],
+		},
+		plugins: {
+			perfectionist,
 		},
 		pnpm: false,
 		react: true,
@@ -40,6 +56,12 @@ export default style(
 			"arrow-style/arrow-return-style": "off",
 			curly: "off",
 
+			"id-length": [
+				"error",
+				{
+					max: 45,
+				},
+			],
 			// makes shit less neat
 			"no-inline-comments": "off",
 			"no-restricted-syntax": "off",
@@ -154,13 +176,29 @@ export default style(
 			"unicorn/no-useless-undefined": ["error", { checkArguments: false, checkArrowFunctionBody: false }],
 		},
 		spellCheck: false,
+		stylistic: {
+			indent: "tab",
+			jsx: true,
+			quotes: "double",
+			semi: true,
+		},
 		test: true,
 		toml: false,
 		type: "game",
-		yaml: false,
+		typescript: {
+			parserOptions: {
+				allowDefaultProject: true,
+			},
+		},
+		yaml: {
+			overrides: {
+				"yaml/indent": "error",
+				"yaml/no-tab-indent": "error",
+			},
+		},
 	},
 	{
-		files: [GLOB_JSON, GLOB_JSONC, "src/**/*.ts"],
+		files: [GLOB_JSON, GLOB_JSONC, "src/**/*.ts", "test/**/*.ts"],
 		rules: {
 			// highly annoying
 			"max-lines": "off",
@@ -171,18 +209,22 @@ export default style(
 	{
 		files: ["test/**/*.ts"],
 		rules: {
-			// highly annoying
-			"max-lines": "off",
-			"max-lines-per-function": "off",
+			"id-length": "off",
 			"test/require-hook": "off",
 		},
 	},
 	{
-		files: [".lune/**", "do-not-sync-ever/**", "./data/**", "node_modules/**", "*.yml", "*.yaml"],
+		files: [".lune/**", "do-not-sync-ever/**", "./data/**", "node_modules/**"],
 		rules: { "*": "off" },
 	},
 	{
 		files: ["benchmarks/**/*.ts", "scripts/**/*.ts"],
 		rules: {},
+	},
+	{
+		files: ["tsconfig.json"],
+		rules: {
+			"jsonc/comma-dangle": "off",
+		},
 	},
 );
